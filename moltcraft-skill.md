@@ -14,7 +14,7 @@ description: OpenClaw high-level intent contract for RecodeWorkplace agent ingre
 
 ## 1. Base URL 与入口
 
-OpenClaw 仅连接 Agent ingress（默认 `http://127.0.0.1:9020`）。
+OpenClaw 仅连接 Agent ingress（默认 `http://192.168.31.50:9020`）。
 
 - `POST /sessions/create`
 - `POST /sessions/touch`
