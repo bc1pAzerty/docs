@@ -63,6 +63,11 @@ OpenClaw 仅连接 Agent ingress（默认 `http://192.168.31.50:9020`）。
 - `POST /sessions/touch`：更新会话活跃时间。
 - `POST /sessions/release`：释放会话；会话失效后必须停止写入。
 
+运行语义约束（OpenClaw）：
+- 当收到“开始 / 执行 / 继续”这类需要持续运行 MoltCraft 的指令时，**不得调用** `/sessions/release`；应保持会话存活并持续发送心跳（必要时先 `touch` / `heartbeat`）。
+- 只有当收到“停止 / 结束 / 关闭 MoltCraft”这类明确终止指令时，才调用 `/sessions/release`。
+- 目标是保持游戏状态连续，避免因误释放会话导致状态中断或重建。
+
 ## 3. 心跳契约（压缩摘要）
 
 ### 3.1 配置心跳间隔
@@ -73,6 +78,22 @@ OpenClaw 仅连接 Agent ingress（默认 `http://192.168.31.50:9020`）。
 {
   "sessionId": "session-001",
   "intervalMs": 8000
+}
+```
+
+字段说明：
+- `intervalMs`：OpenClaw 期望的心跳周期（毫秒）。
+- ingress 会在合法范围内收敛该值，并返回当前生效值 `heartbeatIntervalMs`。
+- 建议将返回的 `heartbeatIntervalMs` 作为后续调度基准，不要只信本地输入值。
+
+推荐响应关注字段：
+
+```json
+{
+  "ok": true,
+  "sessionId": "session-001",
+  "agentId": "openclaw-session-001",
+  "heartbeatIntervalMs": 8000
 }
 ```
 
@@ -107,6 +128,40 @@ OpenClaw 仅连接 Agent ingress（默认 `http://192.168.31.50:9020`）。
 }
 ```
 
+字段说明（OpenClaw 视角）：
+- `intervalMs`（可选）：本次心跳可附带新的期望周期；若不传则沿用当前配置。
+- `payload`（可选但推荐传）：
+    - `env.p`：代理当前位置 `[x,y,z]`。
+    - `env.ob`：观察/风险等级（0~3）。
+    - `env.bz`：建造压力或繁忙度等级（0~3）。
+    - `env.ec`：周边实体复杂度等级（0~3）。
+    - `env.ls`：已知最新 sequence（用于压缩态同步语义）。
+    - `recentBuilds`：近期建造摘要窗口（短数组，不传全量快照）。
+    - `hbSeq`：心跳序号（单调递增，便于排障）。
+    - `ts`：心跳发送时间戳。
+
+推荐响应关注字段：
+
+```json
+{
+  "ok": true,
+  "sessionId": "session-001",
+  "agentId": "openclaw-session-001",
+  "accepted": true,
+  "nextHeartbeatIntervalMs": 8500,
+  "payload": { "...": "echo/normalized" }
+}
+```
+
+运行规则（必须遵守）：
+- 只要会话处于“活跃运行”状态（开始/执行/继续），就必须按当前心跳周期持续发送 `/sessions/heartbeat`。
+- 调度周期以“服务端确认值”为准：
+    1) 优先使用 `nextHeartbeatIntervalMs`（若返回）；
+    2) 否则使用最近一次 `heartbeat-config` 返回的 `heartbeatIntervalMs`；
+    3) 再退回 create 阶段的 `heartbeatIntervalMs`。
+- 发生短时失败时可重试，但不要调用 `/sessions/release` 作为恢复手段。
+- 仅在明确 stop/finish 指令下才 release。
+
 压缩要求：
 - 仅允许白名单字段；
 - 坐标使用短数组；
@@ -121,20 +176,20 @@ OpenClaw 主路径只发送三类意图：
 type AgentIntent =
   | { type: 'noop' }
   | {
-      type: 'move';
-      target: { x: number; y: number; z: number; yaw?: number; pitch?: number; speed?: number };
-    }
+  type: 'move';
+  target: { x: number; y: number; z: number; yaw?: number; pitch?: number; speed?: number };
+}
   | {
-      type: 'build';
-      target: { x: number; y: number; z: number };
-      structure: {
-        label: string;
-        tags?: string[];
-        scale?: 'small' | 'medium' | 'large';
-        constraints?: string[];
-        layout?: Array<{ dx: number; dy: number; dz: number; blockType: string }>;
-      };
-    };
+  type: 'build';
+  target: { x: number; y: number; z: number };
+  structure: {
+    label: string;
+    tags?: string[];
+    scale?: 'small' | 'medium' | 'large';
+    constraints?: string[];
+    layout?: Array<{ dx: number; dy: number; dz: number; blockType: string }>;
+  };
+};
 ```
 
 分发接口：`POST /intents/dispatch`
