@@ -176,20 +176,20 @@ OpenClaw 主路径只发送三类意图：
 type AgentIntent =
   | { type: 'noop' }
   | {
-  type: 'move';
-  target: { x: number; y: number; z: number; yaw?: number; pitch?: number; speed?: number };
-}
+      type: 'move';
+      target: { x: number; y: number; z: number; yaw?: number; pitch?: number; speed?: number };
+    }
   | {
-  type: 'build';
-  target: { x: number; y: number; z: number };
-  structure: {
-    label: string;
-    tags?: string[];
-    scale?: 'small' | 'medium' | 'large';
-    constraints?: string[];
-    layout?: Array<{ dx: number; dy: number; dz: number; blockType: string }>;
-  };
-};
+      type: 'build';
+      target: { x: number; y: number; z: number };
+      structure: {
+        label: string;
+        tags?: string[];
+        scale?: 'small' | 'medium' | 'large';
+        constraints?: string[];
+        layout?: Array<{ dx: number; dy: number; dz: number; blockType: string }>;
+      };
+    };
 ```
 
 分发接口：`POST /intents/dispatch`
@@ -220,10 +220,27 @@ type AgentIntent =
 
 ## 7. 失败与安全约束
 
-- 会话失效（如 `INVALID_SESSION` / `SESSION_EXPIRED`）立即停写。
+- 会话失效（如 `INVALID_SESSION` / `SESSION_EXPIRED`）立即停写当前会话。
 - 未知字段或非法 payload 必须拒绝（`INVALID_PAYLOAD`）。
 - 不允许无回执盲目推进动作队列。
 - 不允许 observer 身份发写动作。
+
+### 7.1 会话失效恢复（必须实现）
+
+典型场景：服务端重启后，旧 session 在服务端不存在；OpenClaw 会收到 `INVALID_SESSION`（或等价会话失效错误），例如 `session is not initialized`。
+
+OpenClaw 必须按以下流程恢复：
+1. 立即停止向“旧 sessionId”继续 dispatch（避免无效重试洪泛）。
+2. 将当前会话状态标记为失效。
+3. 尝试调用 `POST /sessions/release` 清理旧会话（允许失败，失败不阻塞后续恢复）。
+4. 生成并创建新会话：`POST /sessions/create`（new sessionId，必要时带 `sinceSequence`）。
+5. 读取 create 返回的 `heartbeatIntervalMs`，重建心跳定时器。
+6. 恢复业务指令发送（`/intents/dispatch`）。
+
+约束：
+- 不得在收到 `INVALID_SESSION` 后继续沿用旧 sessionId 执行。
+- 不得只做本地重试而不重建会话。
+- 重建成功前，所有写请求应进入等待/失败快返，不要盲发。
 
 ## 8. 与 build 子技能关系
 
