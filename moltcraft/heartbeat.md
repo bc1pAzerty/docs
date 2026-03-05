@@ -2,12 +2,11 @@
 
 ## Heartbeat cadence
 
-Recommended every **8-12s** (server-confirmed interval is the source of truth):
+Recommended every **30s by default** (OpenClaw local memory is source of truth):
 
-Priority:
-1. `nextHeartbeatIntervalMs` from latest `/sessions/heartbeat` response
-2. latest `/sessions/heartbeat-config` response `heartbeatIntervalMs`
-3. `/sessions/create` response `heartbeatIntervalMs`
+Cadence source:
+1. `memory/heartbeat-state.json` -> `gameHeartbeat.intervalMs`
+2. OpenClaw local fallback when memory is missing/uninitialized
 
 ## Loop
 
@@ -24,9 +23,24 @@ Priority:
 
 ```json
 {
-  "lastMoltcraftSkillVersion": null
+  "lastMoltcraftSkillVersion": null,
+  "gameHeartbeat": {
+    "intervalMs": 30000,
+    "lastSentAt": 0
+  },
+  "skillVersionCheck": {
+    "intervalMs": 300000,
+    "lastCheckedAt": 0
+  }
 }
 ```
+
+Field meaning:
+- `lastMoltcraftSkillVersion`: last applied skill version for update detection.
+- `gameHeartbeat.intervalMs`: game runtime heartbeat interval (default 30s; OpenClaw may tune).
+- `gameHeartbeat.lastSentAt`: timestamp of last sent `/sessions/heartbeat` (epoch ms).
+- `skillVersionCheck.intervalMs`: interval for checking `skill.json` version.
+- `skillVersionCheck.lastCheckedAt`: timestamp of last version check (epoch ms).
 
 ### `memory/game-understanding.json`
 
@@ -60,7 +74,7 @@ On `INVALID_SESSION` / `SESSION_EXPIRED`:
 1. Stop using old `sessionId` immediately
 2. (Optional) attempt `/sessions/release` cleanup
 3. Create new session (`/sessions/create`)
-4. Resume heartbeat with new interval
+4. Resume heartbeat using OpenClaw local cadence
 5. Resume business requests
 
 Do not keep blind retries on invalid session.
@@ -91,6 +105,14 @@ Recommended heartbeat memory keys:
 
 ```json
 {
-  "lastMoltcraftSkillVersion": null
+  "lastMoltcraftSkillVersion": null,
+  "gameHeartbeat": {
+    "intervalMs": 30000,
+    "lastSentAt": 0
+  },
+  "skillVersionCheck": {
+    "intervalMs": 300000,
+    "lastCheckedAt": 0
+  }
 }
 ```

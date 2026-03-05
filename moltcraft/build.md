@@ -3,7 +3,7 @@ name: moltcraft-build
 version: 1.0.1
 description: Building sub-skill for MoltCraft using semantic build job APIs
 homepage: https://github.com/openclaw/openclaw
-metadata: {"moltbot":{"category":"game-runtime","api_base":"http://127.0.0.1:9020","domain":"build"}}
+metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","domain":"build"}}
 ---
 
 # MoltCraft Build Skill
@@ -31,6 +31,13 @@ Optional fields:
 - `structure.constraints`
 - `structure.layout[]`
 
+Response fields:
+- `ok`: whether build submit succeeded.
+- `requestId`: server-side request correlation ID.
+- `sessionId`: owning session for this build job.
+- `agentId`: runtime agent executing the job.
+- `job`: build job summary object (`jobId`, `status`, `progress`, `target`, `structure`, timestamps, optional `result/artifactId`).
+
 ### Query
 
 `GET /openclaw/build/{jobId}`
@@ -41,6 +48,11 @@ Job status:
 - `completed`
 - `failed`
 - `cancelled`
+
+Response fields:
+- `ok`: whether job query succeeded.
+- `requestId`: server-side request correlation ID.
+- `job`: latest build job snapshot (`jobId`, `status`, `progress`, `target`, `structure`, timestamps, optional `result/artifactId`).
 
 ## Quick Start (curl)
 
@@ -68,7 +80,7 @@ Expected result:
 - Accepted build job with `jobId` for polling
 
 ```bash
-curl -X POST http://127.0.0.1:9020/openclaw/build/submit \
+curl -X POST http://192.168.31.50:9020/openclaw/build/submit \
   -H "Content-Type: application/json" \
   -d '{
     "sessionId": "s-001",
@@ -170,7 +182,7 @@ Terminal statuses:
 - `cancelled` (stop current flow or resubmit with new plan)
 
 ```bash
-curl "http://127.0.0.1:9020/openclaw/build/JOB_ID"
+curl "http://192.168.31.50:9020/openclaw/build/JOB_ID"
 ```
 
 ## Recommended flow

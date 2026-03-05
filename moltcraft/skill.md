@@ -3,7 +3,7 @@ name: moltcraft
 version: 1.3.1
 description: OpenClaw skill contract for MoltCraft agent ingress (session, heartbeat, intent, environment summary, build job)
 homepage: https://github.com/openclaw/openclaw
-metadata: {"moltbot":{"category":"game-runtime","api_base":"http://127.0.0.1:9020","transport":"ingress-http-json"}}
+metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json"}}
 ---
 
 # MoltCraft
@@ -14,15 +14,15 @@ OpenClaw ↔ MoltCraft primary skill contract.
 
 | File | Path |
 |------|------|
-| **skill.md** (this file) | `RecodeWorkplace/docs/skills/moltcraft/skill.md` |
-| **heartbeat.md** | `RecodeWorkplace/docs/skills/moltcraft/heartbeat.md` |
-| **rules.md** | `RecodeWorkplace/docs/skills/moltcraft/rules.md` |
-| **build.md** | `RecodeWorkplace/docs/skills/moltcraft/build.md` |
-| **skill.json** | `RecodeWorkplace/docs/skills/moltcraft/skill.json` |
+| **skill.md** (this file) | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.md` |
+| **heartbeat.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md` |
+| **rules.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/rules.md` |
+| **build.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md` |
+| **skill.json** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json` |
 
 ## Base URL
 
-`http://127.0.0.1:9020`
+`http://192.168.31.50:9020`
 
 ## API Surface
 
@@ -30,7 +30,6 @@ OpenClaw ↔ MoltCraft primary skill contract.
 - `POST /sessions/create`
 - `POST /sessions/touch`
 - `POST /sessions/release`
-- `POST /sessions/heartbeat-config`
 - `POST /sessions/heartbeat`
 - `POST /intents/dispatch`
 - `POST /commands/dispatch` (compat)
@@ -63,7 +62,7 @@ Using this contract keeps orchestration simple, traceable, and compatible with t
 
 Build execution is delegated to `build.md`:
 
-- Sub-skill file: `RecodeWorkplace/docs/skills/moltcraft/build.md`
+- Sub-skill file: `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md`
 - Entry API: `POST /openclaw/build/submit`
 - Tracking API: `GET /openclaw/build/{jobId}`
 
@@ -83,30 +82,45 @@ Add MoltCraft to your periodic runtime heartbeat so sessions, environment contex
 Add this to your `HEARTBEAT.md` (or equivalent periodic task list):
 
 ```markdown
-## MoltCraft (every 8-12s, server interval is source of truth)
-1. Read `RecodeWorkplace/docs/skills/moltcraft/heartbeat.md`
+## MoltCraft (every 30s by default, OpenClaw local memory is source of truth)
+1. Read `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md`
 2. Ensure session exists (`/sessions/create` when needed)
 3. Send `/sessions/heartbeat`
 4. If `skill.json` version changed, re-read all MoltCraft skill files
 ```
 
-### Step 2: Track the last applied MoltCraft skill version
+### Step 2: Initialize heartbeat memory state
 
 Create or update `memory/heartbeat-state.json`:
 
 ```json
 {
-  "lastMoltcraftSkillVersion": null
+  "lastMoltcraftSkillVersion": null,
+  "gameHeartbeat": {
+    "intervalMs": 30000,
+    "lastSentAt": 0
+  },
+  "skillVersionCheck": {
+    "intervalMs": 300000,
+    "lastCheckedAt": 0
+  }
 }
 ```
 
-Only track the version. If `RecodeWorkplace/docs/skills/moltcraft/skill.json` `version` changes, reload all MoltCraft skill files.
+Field meaning:
+- `lastMoltcraftSkillVersion`: last applied `skill.json` version for update detection.
+- `gameHeartbeat.intervalMs`: runtime heartbeat interval for `/sessions/heartbeat` (default 30s).
+- `gameHeartbeat.lastSentAt`: timestamp of last successful `/sessions/heartbeat` (epoch ms).
+- `skillVersionCheck.intervalMs`: cadence for checking `skill.json` version changes.
+- `skillVersionCheck.lastCheckedAt`: timestamp of last skill-version check (epoch ms).
+
+If `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json` `version` changes, reload all MoltCraft skill files.
 
 ### Step 3: Use `heartbeat.md` as the operational source
 
 For cadence, payload shape, session invalidation recovery, and environment/build memory update triggers, follow:
 
-- `RecodeWorkplace/docs/skills/moltcraft/heartbeat.md`
+- `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md`
 
 ## Quick Start (curl)
 
@@ -129,7 +143,7 @@ Required fields:
 - `agentId`: runtime agent identity for this session
 
 ```bash
-curl -X POST http://127.0.0.1:9020/sessions/create \
+curl -X POST http://192.168.31.50:9020/sessions/create \
   -H "Content-Type: application/json" \
   -d '{
     "sessionId": "s-001",
@@ -137,9 +151,16 @@ curl -X POST http://127.0.0.1:9020/sessions/create \
   }'
 ```
 
+Response fields:
+- `ok`: whether the request succeeded.
+- `requestId`: server-side request correlation ID for debugging.
+- `sessionId`: session key accepted/created by ingress.
+- `agentId`: bound runtime agent instance ID.
+- `created`: `true` when a new session instance was created, `false` when reused.
+
 ### 2) Heartbeat
 
-Call this periodically using the server-provided interval (`nextHeartbeatIntervalMs` preferred).
+Call this periodically based on OpenClaw local heartbeat memory (`memory/heartbeat-state.json` -> `gameHeartbeat.intervalMs`).
 
 Purpose:
 - Keep session alive
@@ -147,7 +168,7 @@ Purpose:
 - Drive memory update triggers in heartbeat flow
 
 ```bash
-curl -X POST http://127.0.0.1:9020/sessions/heartbeat \
+curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
   -H "Content-Type: application/json" \
   -d '{
     "sessionId": "s-001",
@@ -160,6 +181,14 @@ curl -X POST http://127.0.0.1:9020/sessions/heartbeat \
   }'
 ```
 
+Response fields:
+- `ok`: whether heartbeat was accepted.
+- `requestId`: server-side request correlation ID.
+- `sessionId`: session this heartbeat belongs to.
+- `agentId`: current agent handling this session.
+- `accepted`: whether the heartbeat payload was accepted into runtime state.
+- `payload`: heartbeat echo/normalized payload snapshot used by runtime.
+
 ### 3) Get environment summary (P0-1)
 
 Use this before planning movement/build actions, or when heartbeat flow decides environment context is stale.
@@ -168,8 +197,15 @@ Input:
 - `sessionId` query parameter
 
 ```bash
-curl "http://127.0.0.1:9020/openclaw/environment/summary?sessionId=s-001"
+curl "http://192.168.31.50:9020/openclaw/environment/summary?sessionId=s-001"
 ```
+
+Response fields:
+- `ok`: whether summary fetch succeeded.
+- `requestId`: server-side request correlation ID.
+- `sessionId`: session used for summary generation.
+- `agentId`: agent currently bound to this session.
+- `summary`: compact world-state summary used by OpenClaw planning.
 
 ### 4) Dispatch intent
 
@@ -182,7 +218,7 @@ Important fields:
 - `reason`: optional rationale
 
 ```bash
-curl -X POST http://127.0.0.1:9020/intents/dispatch \
+curl -X POST http://192.168.31.50:9020/intents/dispatch \
   -H "Content-Type: application/json" \
   -d '{
     "sessionId": "s-001",
@@ -194,6 +230,13 @@ curl -X POST http://127.0.0.1:9020/intents/dispatch \
     "reason": "patrol"
   }'
 ```
+
+Response fields:
+- `ok`: whether the intent was executed successfully at ingress level.
+- `requestId`: server-side request correlation ID.
+- `sessionId`: session that executed this intent.
+- `agentId`: runtime agent that handled this request.
+- `result`: action execution result payload (`commandId`, `traceId`, `status`, `code`, `message`, optional `data`, and `ok`).
 
 ### 5) Submit build job (P0-2, delegated to build sub-skill)
 
@@ -209,7 +252,7 @@ Expected result:
 - accepted build job with `jobId`
 
 ```bash
-curl -X POST http://127.0.0.1:9020/openclaw/build/submit \
+curl -X POST http://192.168.31.50:9020/openclaw/build/submit \
   -H "Content-Type: application/json" \
   -d '{
     "sessionId": "s-001",
@@ -225,8 +268,27 @@ curl -X POST http://127.0.0.1:9020/openclaw/build/submit \
   }'
 ```
 
+Response fields:
+- `ok`: whether build job submission succeeded.
+- `requestId`: server-side request correlation ID.
+- `sessionId`: session that submitted this build job.
+- `agentId`: runtime agent bound to this build submission.
+- `job`: build job summary object.
+  - `job.jobId`: unique build job ID for polling.
+  - `job.sessionId`: owning session ID.
+  - `job.agentId`: agent that owns this job.
+  - `job.traceId`: trace identifier for observability.
+  - `job.status`: current status (`pending` / `running` / `completed` / `failed` / `cancelled`).
+  - `job.progress`: progress percentage/state value.
+  - `job.target`: absolute target coordinates for build anchor.
+  - `job.structure`: submitted structure intent/layout.
+  - `job.artifactId` (optional): generated artifact identifier when available.
+  - `job.result` (optional): terminal result payload when available.
+  - `job.createdAt` / `job.updatedAt`: timestamps in epoch ms.
+  - `job.startedAt` / `job.finishedAt` (optional): execution timestamps in epoch ms.
+
 For a complete house layout and build-specific recovery guidance, see:
-- `RecodeWorkplace/docs/skills/moltcraft/build.md`
+- `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md`
 
 ### 6) Query build job
 
@@ -236,8 +298,25 @@ Poll this endpoint using `jobId` from submit response until terminal status:
 - `cancelled`
 
 ```bash
-curl "http://127.0.0.1:9020/openclaw/build/JOB_ID"
+curl "http://192.168.31.50:9020/openclaw/build/JOB_ID"
 ```
+
+Response fields:
+- `ok`: whether build job lookup succeeded.
+- `requestId`: server-side request correlation ID.
+- `job`: latest build job snapshot.
+  - `job.jobId`: queried job ID.
+  - `job.sessionId`: session that owns this job.
+  - `job.agentId`: agent executing the job.
+  - `job.traceId`: trace ID propagated from submit.
+  - `job.status`: `pending` / `running` / `completed` / `failed` / `cancelled`.
+  - `job.progress`: progress percentage/state value.
+  - `job.target`: build anchor coordinates.
+  - `job.structure`: structure definition originally submitted.
+  - `job.artifactId` (optional): artifact produced by build pipeline.
+  - `job.result` (optional): final execution result details (especially on terminal states).
+  - `job.createdAt` / `job.updatedAt`: lifecycle timestamps in epoch ms.
+  - `job.startedAt` / `job.finishedAt` (optional): execution timestamps in epoch ms.
 
 ### 7) Release session (only on explicit stop/finish)
 
@@ -245,10 +324,18 @@ Do not release during active runtime loops.
 Release only when the current run is explicitly finished or stopped.
 
 ```bash
-curl -X POST http://127.0.0.1:9020/sessions/release \
+curl -X POST http://192.168.31.50:9020/sessions/release \
   -H "Content-Type: application/json" \
   -d '{ "sessionId": "s-001" }'
 ```
+
+Response fields:
+- `ok`: whether release request succeeded.
+- `requestId`: server-side request correlation ID.
+- `sessionId`: released session.
+- `immediate`: whether teardown was requested as immediate.
+- `finalized`: whether the session was fully torn down at response time.
+- `scheduledTeardownMs`: delayed teardown milliseconds when not finalized immediately.
 
 ## Envelope Contract
 
@@ -290,7 +377,30 @@ OpenClaw workspace local files (not adapter-owned):
 - `memory/build-memory.json`
 - `memory/runtime-policy.json`
 
-### `memory/game-understanding.json` (canonical)
+### 1) `memory/heartbeat-state.json` (canonical)
+
+```json
+{
+  "lastMoltcraftSkillVersion": null,
+  "gameHeartbeat": {
+    "intervalMs": 30000,
+    "lastSentAt": 0
+  },
+  "skillVersionCheck": {
+    "intervalMs": 300000,
+    "lastCheckedAt": 0
+  }
+}
+```
+
+Field meaning:
+- `lastMoltcraftSkillVersion`: last applied `skill.json` version. Used to detect skill updates and trigger re-read.
+- `gameHeartbeat.intervalMs`: runtime heartbeat interval for `/sessions/heartbeat` (default 30s).
+- `gameHeartbeat.lastSentAt`: timestamp of last successful `/sessions/heartbeat` (epoch ms).
+- `skillVersionCheck.intervalMs`: cadence for checking `skill.json` version changes.
+- `skillVersionCheck.lastCheckedAt`: timestamp of last skill-version check (epoch ms).
+
+### 2) `memory/game-understanding.json` (canonical)
 
 ```json
 {
@@ -303,8 +413,55 @@ OpenClaw workspace local files (not adapter-owned):
 }
 ```
 
+Field meaning:
+- `lastEnvironmentFingerprint`: compact fingerprint of last known environment state; used for change detection.
+- `lastPlayerState`: latest known player pose for planning (`x/y/z/yaw/pitch`).
+- `recentHazards`: recently observed risks (e.g. mobs, cliffs, blocked area).
+- `reachableZones`: currently reachable regions for safe movement/build.
+- `resourceHints`: discovered resource opportunities useful for next actions.
+- `anchors`: stable landmarks/positions used for navigation and build alignment.
+
+### 3) `memory/build-memory.json` (canonical)
+
+```json
+{
+  "lastJobId": "",
+  "lastJobStatus": "",
+  "lastJobTraceId": "",
+  "lastBuildTarget": { "x": 0, "y": 0, "z": 0 },
+  "lastCompletedAt": 0,
+  "lastFailure": { "code": "", "message": "", "hint": "" }
+}
+```
+
+Field meaning:
+- `lastJobId`: most recent build job ID.
+- `lastJobStatus`: most recent job terminal/non-terminal status.
+- `lastJobTraceId`: trace ID for correlating build logs.
+- `lastBuildTarget`: target anchor used by most recent job.
+- `lastCompletedAt`: timestamp when a job last reached `completed`.
+- `lastFailure`: latest failure snapshot for replan/recovery (`code/message/hint`).
+
+### 4) `memory/runtime-policy.json` (canonical)
+
+```json
+{
+  "sessionPolicy": { "autoCreate": true, "autoRecoverInvalidSession": true },
+  "heartbeatPolicy": { "preferMemoryInterval": true, "defaultIntervalMs": 30000 },
+  "buildPolicy": { "useSemanticBuild": true, "allowLowLevelWrites": false },
+  "updatedAt": 0
+}
+```
+
+Field meaning:
+- `sessionPolicy`: how runtime manages session lifecycle.
+- `heartbeatPolicy`: heartbeat scheduling policy (prefer `memory/heartbeat-state.json` interval, with 30s default fallback).
+- `buildPolicy`: execution policy for build actions (semantic job path vs low-level writes).
+- `updatedAt`: last policy update timestamp (epoch ms).
+
 Write triggers:
-- heartbeat success -> heartbeat-state
-- environment summary refresh -> game-understanding
-- build job terminal status -> build-memory
-- policy changed -> runtime-policy
+- heartbeat success -> `heartbeat-state`
+- environment summary refresh -> `game-understanding`
+- build job terminal status -> `build-memory`
+- policy changed -> `runtime-policy`
+

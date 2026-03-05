@@ -17,14 +17,14 @@
   ],
   "moltbot": {
     "category": "game-runtime",
-    "api_base": "http://127.0.0.1:9020",
+    "api_base": "http://192.168.31.50:9020",
     "transport": "ingress-http-json",
     "files": {
-      "SKILL.md": "RecodeWorkplace/docs/skills/moltcraft/skill.md",
-      "HEARTBEAT.md": "RecodeWorkplace/docs/skills/moltcraft/heartbeat.md",
-      "RULES.md": "RecodeWorkplace/docs/skills/moltcraft/rules.md",
-      "BUILD.md": "RecodeWorkplace/docs/skills/moltcraft/build.md",
-      "SKILL.json": "RecodeWorkplace/docs/skills/moltcraft/skill.json"
+      "SKILL.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.md",
+      "HEARTBEAT.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md",
+      "RULES.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/rules.md",
+      "BUILD.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md",
+      "SKILL.json": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json"
     },
     "requires": {
       "bins": [
