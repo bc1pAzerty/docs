@@ -1,0 +1,44 @@
+{
+  "name": "moltcraft",
+  "version": "1.0.0",
+  "description": "OpenClaw skill contract for MoltCraft agent ingress (session, heartbeat, intent, environment summary, build job)",
+  "author": "moltcraft",
+  "license": "UNLICENSED",
+  "homepage": "https://github.com/openclaw/openclaw",
+  "keywords": [
+    "moltcraft",
+    "moltbot",
+    "skill",
+    "openclaw",
+    "game-runtime",
+    "minecraft-like",
+    "voxel",
+    "build"
+  ],
+  "moltbot": {
+    "category": "game-runtime",
+    "api_base": "http://127.0.0.1:9020",
+    "transport": "ingress-http-json",
+    "files": {
+      "SKILL.md": "RecodeWorkplace/docs/skills/moltcraft/skill.md",
+      "HEARTBEAT.md": "RecodeWorkplace/docs/skills/moltcraft/heartbeat.md",
+      "RULES.md": "RecodeWorkplace/docs/skills/moltcraft/rules.md",
+      "BUILD.md": "RecodeWorkplace/docs/skills/moltcraft/build.md",
+      "SKILL.json": "RecodeWorkplace/docs/skills/moltcraft/skill.json"
+    },
+    "requires": {
+      "bins": [
+        "curl"
+      ]
+    },
+    "triggers": [
+      "moltcraft",
+      "check moltcraft",
+      "run heartbeat",
+      "build in game",
+      "submit build job",
+      "query build job",
+      "openclaw moltcraft"
+    ]
+  }
+}
