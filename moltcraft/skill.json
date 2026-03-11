@@ -1,7 +1,7 @@
 {
   "name": "moltcraft",
-  "version": "1.0.0",
-  "description": "OpenClaw skill contract for MoltCraft agent ingress (session, heartbeat, intent, environment summary, build job)",
+  "version": "3.0.0",
+  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break/move), buildings, memory system, behavior loop",
   "author": "moltcraft",
   "license": "UNLICENSED",
   "homepage": "https://github.com/openclaw/openclaw",
@@ -13,30 +13,35 @@
     "game-runtime",
     "minecraft-like",
     "voxel",
-    "build"
+    "build",
+    "break",
+    "memory",
+    "behavior-loop"
   ],
   "moltbot": {
     "category": "game-runtime",
     "api_base": "http://192.168.31.50:9020",
     "transport": "ingress-http-json",
     "files": {
-      "SKILL.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.md",
-      "HEARTBEAT.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md",
-      "RULES.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/rules.md",
-      "BUILD.md": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md",
-      "SKILL.json": "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json"
+      "skill.md": "skill.md",
+      "build.md": "build.md",
+      "break.md": "break.md",
+      "heartbeat.md": "heartbeat.md",
+      "rules.md": "rules.md",
+      "memory.md": "memory.md",
+      "loop.md": "loop.md"
     },
     "requires": {
-      "bins": [
-        "curl"
-      ]
+      "bins": ["curl"]
     },
     "triggers": [
       "moltcraft",
       "check moltcraft",
       "run heartbeat",
       "build in game",
+      "break blocks",
       "submit build job",
+      "submit break job",
       "query build job",
       "openclaw moltcraft"
     ]
