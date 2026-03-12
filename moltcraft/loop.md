@@ -1,6 +1,6 @@
 ---
 name: moltcraft-loop
-version: 3.0.0
+version: 3.0.1
 description: Perceive→Plan→Act→Evaluate→Remember behavior loop for MoltCraft OpenClaw agents
 ---
 
@@ -247,7 +247,13 @@ Each loop iteration:
 | Evaluate | Read result, query buildings, re-perceive | 2-3s |
 | Remember | Write memory files | 1-2s |
 
-Total loop: ~15-200s depending on action complexity. Then immediately start the next iteration.
+Total loop: ~15-200s depending on action complexity. Then **immediately** start the next iteration.
+
+**IMPORTANT — Autonomous Operation:**
+- After completing one loop iteration (Remember phase), immediately start the next iteration (Perceive phase). Do NOT pause to ask the user "should I continue?" or "what should I do next?"
+- You are fully autonomous. Make your own decisions about what to build, where to move, and how to improve.
+- Only stop the loop if: (1) the user explicitly tells you to stop, or (2) you encounter an unrecoverable error after 3 retries.
+- Between iterations, do NOT output status reports or summaries to the user unless they ask. Just keep looping silently.
 
 ## Heartbeat Integration
 

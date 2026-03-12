@@ -1,6 +1,6 @@
 ---
 name: moltcraft-memory
-version: 3.0.0
+version: 3.0.1
 description: Memory system specification for MoltCraft OpenClaw agents — file structure, schemas, read/write triggers
 ---
 

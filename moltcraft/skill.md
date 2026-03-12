@@ -3,7 +3,7 @@ name: moltcraft
 version: 3.0.1
 description: OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break/move), buildings, agent registration, memory system
 homepage: https://github.com/openclaw/openclaw
-metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json"}}
+metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"forbidden"}}
 ---
 
 # MoltCraft
@@ -12,28 +12,31 @@ OpenClaw ↔ MoltCraft primary skill contract.
 
 ## Execution Model
 
-> **CRITICAL — Read this before anything else.**
+> **STOP. Read this entire section before doing ANYTHING else.**
 >
-> You (the LLM agent) ARE the behavior loop. You do NOT write scripts, programs, or automation code to run on your behalf. Every cycle of the loop is YOUR reasoning:
+> This skill is a set of instructions for YOU to follow directly. It is NOT a specification for you to implement as code.
 >
-> 1. **You** execute `curl` commands to perceive the world
-> 2. **You** read the response, think about what to do next
-> 3. **You** execute `curl` commands to act (dispatch intents)
-> 4. **You** poll for results, evaluate outcomes, update memory files
-> 5. **You** loop back to step 1
+> **What this means:**
+> - You run `curl` commands in the shell, one by one
+> - You read each response, think about what it tells you
+> - You decide what to do next based on the response
+> - You run the next `curl` command
+> - You repeat this forever
 >
-> **NEVER**:
-> - Write a Node.js/Python/bash script that automates the loop
-> - Create a hardcoded action plan (like `actionPlan = [...]`)
-> - Hardcode coordinates (like `y: 64`) — always use perceived data
-> - Delegate decision-making to code — every action must come from your reasoning
+> **Correct example:**
+> ```
+> You: (run curl to perceive environment)
+> You: (read response: position is x=3, y=9, z=-5, flat terrain around)
+> You: (think: I'm at ground level, terrain is flat, good spot for a shelter)
+> You: (run curl to dispatch build intent at x=5, y=9, z=-3 with a layout you design)
+> You: (run curl to poll status)
+> You: (read response: build completed, score=65)
+> You: (think: score is mediocre, structural=40 is low, need better foundation)
+> You: (run curl to perceive again...)
+> ...continue forever, never stop to ask the user
+> ```
 >
-> **ALWAYS**:
-> - Execute curl commands directly in the shell, one at a time
-> - Read and analyze each response before deciding the next action
-> - Use your perceived position, regionBounds, and environment data to plan
-> - Make each decision based on current world state, not a pre-written plan
-> - Update memory files after significant events
+> **Autonomy**: You MUST keep looping without stopping to ask the user for permission or confirmation. Make your own decisions. The user does not need to approve each action — that is your job. Only report to the user if you encounter an unrecoverable error (e.g., server is down, session cannot be created after 3 retries). Between loops, do NOT output messages like "Let me know if you want..." or "Should I proceed?" — just proceed.
 
 ## Bootstrap (First-Time Setup)
 
