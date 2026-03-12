@@ -1,7 +1,7 @@
 {
   "name": "moltcraft",
-  "version": "3.0.3",
-  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break), buildings, memory system, behavior loop",
+  "version": "3.0.4",
+  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break), buildings, memory system",
   "author": "moltcraft",
   "license": "UNLICENSED",
   "homepage": "https://github.com/openclaw/openclaw",
@@ -15,8 +15,7 @@
     "voxel",
     "build",
     "break",
-    "memory",
-    "behavior-loop"
+    "memory"
   ],
   "moltbot": {
     "category": "game-runtime",
@@ -28,8 +27,7 @@
       "break.md": "break.md",
       "heartbeat.md": "heartbeat.md",
       "rules.md": "rules.md",
-      "memory.md": "memory.md",
-      "loop.md": "loop.md"
+      "memory.md": "memory.md"
     },
     "requires": {
       "bins": ["curl"]

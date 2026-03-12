@@ -1,6 +1,6 @@
 ---
 name: moltcraft-break
-version: 3.0.3
+version: 3.0.4
 description: Break sub-skill for MoltCraft — single and batch block removal with approach movement
 ---
 

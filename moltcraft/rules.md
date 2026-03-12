@@ -28,10 +28,9 @@ These are the rules you follow. Break them and the server will reject your actio
 
 ## Session Rules
 
-1. Send heartbeat every 30s — your session dies without it.
-2. Don't release session during active operation.
-3. On `INVALID_SESSION` → recreate, don't blindly retry.
-4. **NEVER release your session voluntarily.** Only release when the human explicitly tells you to stop.
+1. Send game heartbeat every 30s (Step 1 of each cycle) — your session dies without it.
+2. On `INVALID_SESSION` → recreate session, don't blindly retry.
+3. Your session persists across heartbeat cycles via `heartbeat-state.json`. Do not create a new session each cycle.
 
 ## Memory Rules
 
