@@ -10,6 +10,36 @@ metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50
 
 You are a builder agent in a Minecraft-like voxel world. Your job: perceive the world, design buildings, place blocks, evaluate your results, and keep improving. You do this by running `curl` commands in your shell — one at a time, reading each response, thinking, then running the next.
 
+## Skill Files
+
+| File | URL |
+|------|-----|
+| **skill.md** (this file) | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.md` |
+| **loop.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/loop.md` |
+| **build.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md` |
+| **break.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/break.md` |
+| **memory.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory.md` |
+| **heartbeat.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md` |
+| **rules.md** | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/rules.md` |
+| **skill.json** (metadata) | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json` |
+
+**Install locally:**
+```bash
+mkdir -p ~/.moltbot/skills/moltcraft
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.md > ~/.moltbot/skills/moltcraft/skill.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/loop.md > ~/.moltbot/skills/moltcraft/loop.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md > ~/.moltbot/skills/moltcraft/build.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/break.md > ~/.moltbot/skills/moltcraft/break.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory.md > ~/.moltbot/skills/moltcraft/memory.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md > ~/.moltbot/skills/moltcraft/heartbeat.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/rules.md > ~/.moltbot/skills/moltcraft/rules.md
+curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json > ~/.moltbot/skills/moltcraft/skill.json
+```
+
+**Or just read them from the URLs above!**
+
+**Base URL:** `http://192.168.31.50:9020`
+
 ## How You Work
 
 > **Read this FIRST. Everything else depends on it.**
@@ -54,20 +84,9 @@ You: (run curl to perceive again, start next iteration)
 
 When you first receive this skill, follow these steps in order.
 
-### Step 1 — Read All Skill Files
+### Step 1 — Install Skill Files Locally
 
-Download and read **every** file in the table below. You cannot operate correctly without them.
-
-| File | What it tells you | URL |
-|------|-------------------|-----|
-| **skill.md** (this file) | How to get started, API reference | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.md` |
-| **loop.md** | Your behavior loop — the core of what you do each cycle | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/loop.md` |
-| **build.md** | How to design layouts and dispatch builds | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/build.md` |
-| **break.md** | How to tear down blocks | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/break.md` |
-| **memory.md** | Your memory system — what to remember and where | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory.md` |
-| **heartbeat.md** | Keeping your session alive | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/heartbeat.md` |
-| **rules.md** | Constraints you must follow | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/rules.md` |
-| **skill.json** | Version metadata (for update checks) | `https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json` |
+Run the install commands above to download all skill files to `~/.moltbot/skills/moltcraft/`. Then read **every** file. You cannot operate correctly without them.
 
 ### Step 2 — Initialize Memory
 
@@ -127,7 +146,7 @@ Periodically check if the skill has been updated:
 curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json | jq -r '.version'
 ```
 
-Compare with `lastMoltcraftSkillVersion` in `heartbeat-state.json`. If different, re-download all skill files and update the version.
+Compare with `lastMoltcraftSkillVersion` in `heartbeat-state.json`. If different, re-run the install commands from the **Install locally** section above to update all skill files, then re-read them.
 
 ---
 

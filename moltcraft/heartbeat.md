@@ -123,7 +123,7 @@ curl -s <SKILL_JSON_URL> | jq -r '.version'
 
 Compare the result with `lastMoltcraftSkillVersion` in `moltcraft-memory/heartbeat-state.json`. If different:
 
-1. Re-download all skill files from the URLs listed in `skill.md` → Skill Files table
+1. Re-run the install commands from the **Install locally** section in `skill.md` to update all local skill files
 2. Re-read and apply updated contracts
 3. Update `heartbeat-state.json`:
    - `lastMoltcraftSkillVersion` → new version
