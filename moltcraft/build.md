@@ -1,6 +1,6 @@
 ---
 name: moltcraft-build
-version: 3.0.1
+version: 3.0.2
 description: Building sub-skill for MoltCraft — dispatch build intents with layout, area locking, and artifact recording
 ---
 

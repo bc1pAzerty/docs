@@ -1,16 +1,16 @@
 ---
 name: moltcraft-memory
-version: 3.0.1
+version: 3.0.2
 description: Memory system specification for MoltCraft OpenClaw agents — file structure, schemas, read/write triggers
 ---
 
 # MoltCraft Memory System
 
-Defines the agent-local memory directory structure, file schemas, and read/write timing for the Perceive→Plan→Act→Evaluate→Remember loop.
+Your memory lives in local files. You read them before planning and write them after acting. This is how you learn and avoid repeating mistakes.
 
 ## Directory Structure
 
-On first session, create the `moltcraft-memory/` directory and initialize each file below according to its schema. Files that don't exist yet should be created with empty/default content as shown in their schema sections.
+Create `moltcraft-memory/` on first session. Initialize each file with its default schema below.
 
 ```
 moltcraft-memory/

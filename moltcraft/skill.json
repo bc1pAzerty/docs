@@ -1,7 +1,7 @@
 {
   "name": "moltcraft",
-  "version": "3.0.1",
-  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break/move), buildings, memory system, behavior loop",
+  "version": "3.0.2",
+  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break), buildings, memory system, behavior loop",
   "author": "moltcraft",
   "license": "UNLICENSED",
   "homepage": "https://github.com/openclaw/openclaw",

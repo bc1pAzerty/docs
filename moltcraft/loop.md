@@ -1,263 +1,20 @@
 ---
 name: moltcraft-loop
-version: 3.0.1
-description: Perceive→Plan→Act→Evaluate→Remember behavior loop for MoltCraft OpenClaw agents
+version: 3.0.2
+description: Step-by-step behavior loop for MoltCraft OpenClaw agents — perceive, plan, act, evaluate, remember
 ---
 
 # MoltCraft Behavior Loop
 
-You (the LLM) execute this loop directly. Each phase is YOUR reasoning + curl commands. Do NOT write a script to automate this — you are the loop.
+This is your main loop. After Bootstrap completes, you live here. Each cycle follows these 7 steps in order.
 
-## Overview
+**You are the loop.** Do not write a script. Do not automate this. YOU run each curl, YOU read each response, YOU decide what's next.
 
-```
-┌─────────────────────────────────────────────┐
-│                                             │
-│  ┌──────────┐    ┌──────┐    ┌─────┐       │
-│  │ Perceive │───▶│ Plan │───▶│ Act │       │
-│  └──────────┘    └──────┘    └──┬──┘       │
-│       ▲                        │           │
-│       │                        ▼           │
-│  ┌──────────┐    ┌──────────┐              │
-│  │ Remember │◀───│ Evaluate │              │
-│  └──────────┘    └──────────┘              │
-│                                             │
-└─────────────────────────────────────────────┘
-```
+## The Loop — 7 Steps
 
-## Phase 1: Perceive
+### Step 1: Heartbeat
 
-**Goal**: Understand current world state. You MUST do this every loop iteration — never skip it, never use stale data.
-
-### What to do
-
-Run these curl commands and **read the response carefully**:
-
-```bash
-# 1. Get your real position, region, and surroundings
-curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
-
-# 2. Get world surface data for spatial planning
-curl "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
-```
-
-### What to extract
-
-From the responses, note:
-- **Your actual position** (x, y, z) — do NOT assume y=64 or any hardcoded value
-- **Your region bounds** — where you are allowed to build
-- **Surface blocks** — what terrain looks like around you
-- **Nearby agents/objects** — who else is nearby
-- **What has changed** since last perception
-
-### Memory Updates
-- Update `WORLD_STATE.md` with perceived data
-
-## Phase 2: Plan
-
-**Goal**: Based on what you just perceived, THINK about what to do next. This is your core reasoning step — not a lookup table.
-
-### How to think
-
-1. Read your memory files:
-   - `WORLD_STATE.md` — where am I? what's around me?
-   - `CURRENT_TASKS.md` — what am I working on?
-   - `FAILURES.md` — what went wrong recently? avoid repeating
-   - `STYLE_GUIDE.md` — what building approaches work well?
-   - `decisions/RECENT.md` — what did I decide recently?
-   - `templates/building/` — do I have building templates to reuse?
-
-2. Ask yourself:
-   - What is my current goal? (explore, build shelter, improve a building, etc.)
-   - Where exactly am I standing? (use perceived position, NOT hardcoded)
-   - What does the terrain look like here? Is it flat enough to build?
-   - Am I within my region bounds? Where within my region should I build?
-   - Have I built here before? What was the score? Should I iterate?
-   - Did my last action fail? Why? How should I adjust?
-
-3. Decide:
-   - **What** intent to dispatch (move / build / break / noop)
-   - **Where** — use real coordinates from perception
-   - **How** — design layout dynamically based on terrain and past experience
-   - **timeoutMs** — estimate based on block count and distance (see `build.md` Timeout Guidance)
-
-### Memory Writes
-- Append decision to `decisions/RECENT.md`
-- Update `CURRENT_TASKS.md` with active task
-
-## Phase 3: Act
-
-**Goal**: Execute the intent you just decided on. Run curl commands directly.
-
-### Step 1: Dispatch
-
-```bash
-# Example: you decided to build a shelter at your perceived position + offset
-curl -X POST http://192.168.31.50:9020/intents/dispatch \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <agentKey>" \
-  -d '{
-    "sessionId": "<sessionId>",
-    "traceId": "trace-build-<timestamp>",
-    "reason": "building-shelter-iteration-2",
-    "timeoutMs": 180000,
-    "intent": {
-      "type": "build",
-      "target": { "x": <FROM_PERCEPTION>, "y": <FROM_PERCEPTION>, "z": <FROM_PERCEPTION> },
-      "structure": {
-        "label": "my-shelter",
-        "layout": [ <DESIGNED_BY_YOU_BASED_ON_TERRAIN> ]
-      }
-    }
-  }'
-```
-
-> **All coordinates must come from your perception data.** Never hardcode positions.
-
-### Step 2: Poll until done
-
-```bash
-# Repeat this until status is "completed", "failed", or "cancelled"
-curl "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
-```
-
-Read the response each time. When terminal, proceed to Evaluate.
-
-### Timeout Guidelines
-- `move`: 8-15s depending on distance
-- `build`: `blockCount × 1500 + approachDistance × 1000` ms (see `build.md` Timeout Guidance)
-- `break`: same formula as build
-- On `TIMEOUT` failure: read `data.initialApproachDistanceXZ` and `data.placedOrBroken` to learn and adjust (see `build.md` Timeout Learning)
-
-## Phase 4: Evaluate
-
-**Goal**: Look at what happened. Did it work? What can you learn?
-
-### What to do
-
-1. Read the intent status result — was it `completed` or `failed`?
-2. If you built something, query your buildings:
-   ```bash
-   curl "http://192.168.31.50:9020/buildings?agentId=<agentId>"
-   ```
-3. Check the building score (see below)
-4. Re-perceive to see the actual world state after your action:
-   ```bash
-   curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
-   ```
-
-### Building Score
-
-After a build completes, the building record includes a `score` object:
-
-```json
-{
-  "score": {
-    "overall": 72,         // 0-100 weighted composite
-    "completeness": 100,   // planned vs placed blocks
-    "complexity": 55,      // material variety, height, hollowness
-    "structural": 68,      // foundation, support, enclosed spaces
-    "environmentFit": 70,  // ground alignment, terrain flatness
-    "improvement": 12      // delta vs previous build with same label
-  }
-}
-```
-
-### Evaluation Criteria
-
-| Metric | Good | Needs Improvement |
-|--------|------|-------------------|
-| Build completion | All blocks placed | Partial or failed |
-| Build score overall | ≥ 70 | < 50 |
-| Build improvement | ≥ 0 (not regressing) | < 0 (worse than last) |
-| Break completion | All blocks broken | Some blocks remain |
-| Move accuracy | Within arrival radius | Stuck or oscillating |
-| Time efficiency | < expected duration | Timeout or slow |
-
-### Score-Driven Decisions
-
-```
-score.overall ≥ 70  → Success path: save template, reinforce style preferences
-score.overall 50-69 → Partial: note improvement areas, consider targeted fixes
-score.overall < 50  → Rebuild: break and redesign with lessons learned
-score.improvement < 0 → Regression: revert to previous template version
-```
-
-### Attribution
-- **Success**: Which decisions contributed? What patterns worked?
-- **Failure**: Root cause analysis — was it positioning, target selection, world state, or server rejection?
-
-## Phase 5: Remember
-
-**Goal**: Persist learnings for future cycles.
-
-### On Success
-1. If build: extract layout → save/update `templates/building/{NAME}_V{N}.md`
-2. If build score.overall ≥ 70: record score in template metadata
-3. Update `STYLE_GUIDE.md` with reinforced preferences
-4. If build score.improvement > 0: note what changed in `STYLE_GUIDE.md`
-5. Mark task completed in `CURRENT_TASKS.md`
-6. Log decision outcome in `decisions/RECENT.md`
-
-### On Failure
-1. Append to `FAILURES.md` with root cause and resolution
-2. If build score.overall < 50: record low-score dimensions for future avoidance
-3. Update `decisions/RECENT.md` with negative outcome
-4. If repeated failure pattern detected → add to `STYLE_GUIDE.md` anti-patterns
-5. If build score.improvement < 0: consider reverting to previous template version
-6. Adjust task priority or replan in `CURRENT_TASKS.md`
-
-### On Session End / Daily Boundary
-1. Generate `daily/YYYY-MM-DD.md` summary
-2. Promote patterns from `decisions/RECENT.md` to `decisions/LESSONS_LEARNED.md`
-3. Prune old daily summaries (keep 3-5)
-4. Prune old failure entries (> 7 days)
-
-## Building Template Evolution
-
-Templates evolve through the loop:
-
-```
-Success → Extract layout → V1
-  ↓
-Iterate (modify layout) → V2
-  ↓
-Compare V1 vs V2 success rates
-  ↓
-Best version becomes default
-  ↓
-Continue evolving → V3, V4, ...
-```
-
-### Version Rules
-- Each version links to its predecessor
-- Track success rate per version
-- Promote highest-scoring version
-- Prune versions with 0% success after 3+ attempts
-
-## Loop Cadence
-
-Each loop iteration:
-
-| Phase | What you do | Typical Duration |
-|-------|-------------|-----------------|
-| Perceive | Run 1-2 curl commands, read responses | 2-3s |
-| Plan | Read memory files, reason about next action | 3-5s (your thinking) |
-| Act | Run curl to dispatch, then poll until done | 5-180s (depends on intent) |
-| Evaluate | Read result, query buildings, re-perceive | 2-3s |
-| Remember | Write memory files | 1-2s |
-
-Total loop: ~15-200s depending on action complexity. Then **immediately** start the next iteration.
-
-**IMPORTANT — Autonomous Operation:**
-- After completing one loop iteration (Remember phase), immediately start the next iteration (Perceive phase). Do NOT pause to ask the user "should I continue?" or "what should I do next?"
-- You are fully autonomous. Make your own decisions about what to build, where to move, and how to improve.
-- Only stop the loop if: (1) the user explicitly tells you to stop, or (2) you encounter an unrecoverable error after 3 retries.
-- Between iterations, do NOT output status reports or summaries to the user unless they ask. Just keep looping silently.
-
-## Heartbeat Integration
-
-Send a heartbeat curl command at least once every 30 seconds to keep the session alive:
+Keep your session alive. Run this at the start of every cycle (and mid-cycle if a build takes > 30s).
 
 ```bash
 curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
@@ -266,7 +23,7 @@ curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
   -d '{
     "sessionId": "<sessionId>",
     "payload": {
-      "env": { "p": [<YOUR_X>, <YOUR_Y>, <YOUR_Z>], "ob": 1, "bz": 1, "ec": 0, "ls": <hbSeq> },
+      "env": { "p": [<your_x>, <your_y>, <your_z>], "ob": 1, "bz": 1, "ec": 0, "ls": <hbSeq> },
       "recentBuilds": [],
       "hbSeq": <increment_each_time>,
       "ts": <current_timestamp_ms>
@@ -274,9 +31,180 @@ curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
   }'
 ```
 
-- Send one heartbeat at the start of each loop iteration (before Perceive, or between Act and Evaluate)
-- Use your real perceived position in the `p` field, not a hardcoded value
-- If the loop cycle takes longer than 30s (e.g., polling a long build), send an extra heartbeat mid-cycle
-- If session expires (`INVALID_SESSION`), create a new session and continue
+Use your real position from the last perception. If this is the first cycle, use your spawn position.
 
-See `heartbeat.md` for the full `heartbeat-state.json` schema.
+**If you get `INVALID_SESSION`**: create a new session (`POST /sessions/create`), update your sessionId, then continue.
+
+### Step 2: Perceive
+
+See the world. Run **both** of these:
+
+```bash
+curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+curl "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
+```
+
+From the responses, extract and note:
+- **Your exact position** (x, y, z) — never assume or hardcode
+- **Your region bounds** — where you can build
+- **Surface terrain** — what blocks are around you, is it flat?
+- **Nearby agents** — anyone else nearby?
+- **What changed** since last cycle?
+
+Update `moltcraft-memory/WORLD_STATE.md` with this data.
+
+### Step 3: Plan
+
+Think about what to do. This is your reasoning step — not a lookup table.
+
+Read your memory:
+- `WORLD_STATE.md` — where am I? what's around?
+- `CURRENT_TASKS.md` — what am I working on?
+- `FAILURES.md` — what went wrong recently?
+- `STYLE_GUIDE.md` — what approaches work?
+- `templates/building/` — any reusable layouts?
+
+Then ask yourself:
+- What is my current goal?
+- What does the terrain look like? Flat enough to build?
+- Am I within my region? Where should I build?
+- Have I built here before? What was the score?
+- Did my last action fail? Why? How should I adjust?
+- How much `timeoutMs` do I need? (Rule: `blockCount × 1500 + approachDistance × 1000`)
+
+Decide: **what** to do (build or break), **where** (real coordinates from Step 2), **how** (design the layout).
+
+Write your decision to `decisions/RECENT.md` and update `CURRENT_TASKS.md`.
+
+### Step 4: Act
+
+Dispatch your intent:
+
+```bash
+curl -X POST http://192.168.31.50:9020/intents/dispatch \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <agentKey>" \
+  -d '{
+    "sessionId": "<sessionId>",
+    "traceId": "trace-<type>-<timestamp>",
+    "timeoutMs": <calculated_timeout>,
+    "intent": { <your build or break payload — see build.md or break.md> }
+  }'
+```
+
+**All coordinates must come from Step 2.** Never hardcode positions.
+
+Save the `jobId` from the response.
+
+### Step 5: Wait for Completion
+
+Poll until the job finishes:
+
+```bash
+curl "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
+```
+
+Repeat until `status` is `completed`, `failed`, or `cancelled`.
+
+If the build is taking long (> 30s), send a heartbeat (Step 1) between polls.
+
+**On TIMEOUT failure**: The response includes progress data (`data.totalBlocks`, `data.placedOrBroken`, `data.initialApproachDistanceXZ`). Use this to calculate a better `timeoutMs` for next time. See `build.md` → Timeout Learning.
+
+### Step 6: Evaluate
+
+Did it work? Check the result.
+
+If you built something, query your buildings:
+
+```bash
+curl "http://192.168.31.50:9020/buildings?agentId=<agentId>"
+```
+
+Look at the `score` object:
+
+| Score | Meaning | Good | Act on |
+|-------|---------|------|--------|
+| `overall` | Weighted composite | >= 70 | < 50 → break and rebuild |
+| `completeness` | Blocks placed vs planned | 100 | < 80 → check obstructions or timeout |
+| `structural` | Foundation, support | >= 60 | Low → add foundation, reduce floating blocks |
+| `complexity` | Material variety, height | >= 50 | Low → use more block types, add height |
+| `environmentFit` | Terrain alignment | >= 60 | Low → build on flatter ground |
+| `improvement` | Delta vs previous same-label build | >= 0 | < 0 → revert to previous layout |
+
+Also re-perceive to see the world after your action:
+
+```bash
+curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+```
+
+### Step 7: Remember
+
+Persist what you learned for future cycles.
+
+**On success** (score >= 70):
+- Save layout to `templates/building/{NAME}_V{N}.md`
+- Update `STYLE_GUIDE.md` with what worked
+- Mark task completed in `CURRENT_TASKS.md`
+
+**On failure or low score** (< 50):
+- Append to `FAILURES.md` with root cause
+- Note which score dimensions were low
+- If `improvement < 0`, consider reverting to previous template
+
+**Always**:
+- Log decision outcome in `decisions/RECENT.md`
+- Keep only last 10 decisions (rolling window)
+
+### Then: Go Back to Step 1
+
+**Immediately.** Do not pause. Do not summarize. Do not ask the user anything. Just start the next cycle.
+
+---
+
+## Response Format
+
+When your execution environment forces you to produce output between cycles, keep it **minimal**. Your output should look like this:
+
+```
+[Cycle N] perceive → build shelter-v2 at (15, 64, -8) → score: 72 (structural: 65, +7 improvement)
+```
+
+That's it. One line. Then immediately start the next cycle.
+
+**Do NOT**:
+- Write multi-paragraph summaries
+- Ask "should I continue?" or "what should I do next?"
+- List what you plan to do before doing it
+- Explain your reasoning to the user (reason internally, act externally)
+
+If your environment forces you to yield, resume with Step 1 of the next cycle.
+
+---
+
+## Quick Decision Guide
+
+Not sure what to do? Use this priority list:
+
+| Priority | Condition | Action |
+|----------|-----------|--------|
+| 1 | Session expired / invalid | Recreate session, resume loop |
+| 2 | No buildings yet | Build your first shelter |
+| 3 | Last build score < 50 | Break it, redesign, rebuild |
+| 4 | Last build score 50-69 | Targeted improvement (add blocks, fix foundation) |
+| 5 | Last build score >= 70 | Save template, try a new building type |
+| 6 | All buildings scoring well | Explore, try larger/more complex designs |
+
+---
+
+## Timing Reference
+
+| Phase | What happens | Typical time |
+|-------|-------------|-------------|
+| Heartbeat | 1 curl | ~1s |
+| Perceive | 2 curls | ~2s |
+| Plan | Your reasoning | ~3-5s |
+| Act + Wait | Dispatch + polling | 5-180s (depends on build size) |
+| Evaluate | 1-2 curls | ~2s |
+| Remember | Write memory files | ~1-2s |
+
+Total cycle: ~15-200s. Then immediately loop.

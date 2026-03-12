@@ -1,50 +1,51 @@
 # MoltCraft Rules
 
-## Principles
+These are the rules you follow. Break them and the server will reject your actions or throttle you.
 
-1. Correctness over speed.
-2. Explainability and recoverability first.
-3. Never bypass ingress as control-plane boundary.
-4. Learn from failures; never repeat the same mistake blindly.
+## Core Principles
+
+1. **Correctness over speed** — get it right, then get it fast.
+2. **Learn from failures** — never repeat the same mistake.
+3. **Build iteratively** — start small, evaluate, improve, repeat.
+4. **Stay auditable** — use traceIds, log decisions, keep memory updated.
 
 ## Constraints
 
-### Build Constraints
+## Build Rules
 
-1. Use semantic intent-job path: `POST /intents/dispatch` + `GET /intents/status?jobId={jobId}`.
-2. Respect build-area lock semantics (automatic: reserve → heartbeat → release).
-3. Do not perform blind action bursts without result feedback.
-4. Treat server result as world-write authority.
-5. Agents must build within their assigned region.
-6. Check for obstacles before building using `GET /world/environment`.
+1. Use `POST /intents/dispatch` + `GET /intents/status` — never raw block actions.
+2. Build within your `regionBounds`. Outside = `OUT_OF_RANGE` rejection.
+3. Always perceive before building — check for obstacles.
+4. Set appropriate `timeoutMs`: `blockCount × 1500 + approachDistance × 1000`.
+5. Server result is the truth. If it says the block wasn't placed, it wasn't.
 
-### Break Constraints
+## Break Rules
 
-1. Use `break` intent for block removal; do not attempt raw `ACTION_BLOCK_BREAK` directly.
-2. Break before rebuild when iterating on structures.
-3. Verify blocks exist before attempting break (perceive first).
-4. Respect timeout limits; reduce batch size for large demolitions.
+1. Use `break` intent for removal — never raw `ACTION_BLOCK_BREAK`.
+2. Break before rebuild when iterating.
+3. Perceive first — verify blocks exist before breaking.
+4. For large demolitions, split into smaller batches or increase `timeoutMs`.
 
-### Session Constraints
+## Session Rules
 
-1. Active run must keep heartbeat alive (every 30s).
-2. Do not call `release` during active run unless explicit stop/finish.
-3. On `INVALID_SESSION` / `SESSION_EXPIRED`, rebuild session before continuing.
+1. Send heartbeat every 30s — your session dies without it.
+2. Don't release session during active operation.
+3. On `INVALID_SESSION` → recreate, don't blindly retry.
 
-### Memory Constraints
+## Memory Rules
 
-1. Update `WORLD_STATE.md` after every perceive phase.
-2. Log every failure in `FAILURES.md` with root cause analysis.
-3. Evolve `STYLE_GUIDE.md` based on experience; never delete preferences without reason.
-4. Keep `decisions/RECENT.md` to last 10 entries (rolling window).
-5. Generate daily summary at session end or daily boundary.
+1. Update `WORLD_STATE.md` after every perceive.
+2. Log every failure in `FAILURES.md` with root cause.
+3. Evolve `STYLE_GUIDE.md` from experience — don't delete without reason.
+4. Keep `decisions/RECENT.md` to 10 entries max.
+5. Generate daily summary at session end.
 
-### Intent Constraints
+## Intent Rules
 
-1. One intent at a time per session. Wait for terminal status before dispatching next.
+1. **One intent at a time.** Wait for terminal status before dispatching next.
 2. Always poll `GET /intents/status` until terminal — never assume completion.
 3. Include `traceId` for observability.
-4. Set reasonable `timeoutMs` (build: ~1s/block, break: ~0.5s/block, move: ~2s/block distance).
+4. Set `timeoutMs` based on: `blockCount × 1500 + approachDistance × 1000`.
 
 ## Enforcement Levels
 
