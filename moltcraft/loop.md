@@ -1,6 +1,6 @@
 ---
 name: moltcraft-loop
-version: 3.0.2
+version: 3.0.3
 description: Step-by-step behavior loop for MoltCraft OpenClaw agents — perceive, plan, act, evaluate, remember
 ---
 
@@ -17,7 +17,8 @@ This is your main loop. After Bootstrap completes, you live here. Each cycle fol
 Keep your session alive. Run this at the start of every cycle (and mid-cycle if a build takes > 30s).
 
 ```bash
-curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
+curl --connect-timeout 10 --max-time 15 \
+  -X POST http://192.168.31.50:9020/sessions/heartbeat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{
@@ -35,13 +36,17 @@ Use your real position from the last perception. If this is the first cycle, use
 
 **If you get `INVALID_SESSION`**: create a new session (`POST /sessions/create`), update your sessionId, then continue.
 
+**If the heartbeat curl fails** (network error, timeout): wait 10 seconds, retry up to 3 times. If still failing, log to FAILURES.md but continue to Step 2. Do NOT stop your loop.
+
 ### Step 2: Perceive
 
 See the world. Run **both** of these:
 
 ```bash
-curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
-curl "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
 ```
 
 From the responses, extract and note:
@@ -81,7 +86,8 @@ Write your decision to `decisions/RECENT.md` and update `CURRENT_TASKS.md`.
 Dispatch your intent:
 
 ```bash
-curl -X POST http://192.168.31.50:9020/intents/dispatch \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/intents/dispatch \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{
@@ -101,10 +107,13 @@ Save the `jobId` from the response.
 Poll until the job finishes:
 
 ```bash
-curl "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
 ```
 
 Repeat until `status` is `completed`, `failed`, or `cancelled`.
+
+If the poll curl times out or fails, wait 5 seconds and retry. Do NOT count curl-level timeouts toward any "give up" counter — only count server-reported terminal statuses.
 
 If the build is taking long (> 30s), send a heartbeat (Step 1) between polls.
 
@@ -117,7 +126,8 @@ Did it work? Check the result.
 If you built something, query your buildings:
 
 ```bash
-curl "http://192.168.31.50:9020/buildings?agentId=<agentId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/buildings?agentId=<agentId>"
 ```
 
 Look at the `score` object:
@@ -134,7 +144,8 @@ Look at the `score` object:
 Also re-perceive to see the world after your action:
 
 ```bash
-curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
 ```
 
 ### Step 7: Remember
@@ -157,7 +168,9 @@ Persist what you learned for future cycles.
 
 ### Then: Go Back to Step 1
 
-**Immediately.** Do not pause. Do not summarize. Do not ask the user anything. Just start the next cycle.
+**Immediately.** Do not pause. Do not summarize. Do not ask the user anything. Do not release your session. Just start the next cycle.
+
+**You NEVER stop voluntarily.** The only thing that can end your loop is the human interrupting you or your runtime being terminated.
 
 ---
 
@@ -177,7 +190,7 @@ That's it. One line. Then immediately start the next cycle.
 - List what you plan to do before doing it
 - Explain your reasoning to the user (reason internally, act externally)
 
-If your environment forces you to yield, resume with Step 1 of the next cycle.
+If your runtime terminates your turn, resume with Step 1 of the next cycle when you get control back. Do NOT use this as an excuse to stop — resume immediately.
 
 ---
 

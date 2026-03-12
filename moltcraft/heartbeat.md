@@ -55,6 +55,7 @@ Your heartbeat is woven into the behavior loop (see `loop.md` Step 1). Here's th
 2. If polling a long-running intent (> 30s) → send extra heartbeat between polls
 3. If session expires (`INVALID_SESSION`) → recreate session, continue loop
 4. If world state changed significantly → re-perceive (triggers loop Step 2)
+5. If heartbeat curl fails (network error, timeout) → wait 10s, retry. After 3 consecutive failures, log to FAILURES.md but continue loop. Do NOT stop.
 
 ## Heartbeat Payload
 

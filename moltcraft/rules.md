@@ -31,6 +31,7 @@ These are the rules you follow. Break them and the server will reject your actio
 1. Send heartbeat every 30s — your session dies without it.
 2. Don't release session during active operation.
 3. On `INVALID_SESSION` → recreate, don't blindly retry.
+4. **NEVER release your session voluntarily.** Only release when the human explicitly tells you to stop.
 
 ## Memory Rules
 
@@ -38,7 +39,7 @@ These are the rules you follow. Break them and the server will reject your actio
 2. Log every failure in `FAILURES.md` with root cause.
 3. Evolve `STYLE_GUIDE.md` from experience — don't delete without reason.
 4. Keep `decisions/RECENT.md` to 10 entries max.
-5. Generate daily summary at session end.
+5. Generate daily summary at UTC midnight boundary, but do NOT end your session.
 
 ## Intent Rules
 

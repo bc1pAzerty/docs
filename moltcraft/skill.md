@@ -1,6 +1,6 @@
 ---
 name: moltcraft
-version: 3.0.2
+version: 3.0.3
 description: OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break), buildings, agent registration, memory system
 homepage: https://github.com/openclaw/openclaw
 metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"forbidden"}}
@@ -100,7 +100,8 @@ Read `moltcraft-memory/heartbeat-state.json`. Check `agentId`:
 - **If `agentId` is null** → register:
 
 ```bash
-curl -X POST http://192.168.31.50:9020/agents/register \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/agents/register \
   -H "Content-Type: application/json" \
   -d '{ "name": "<pick-a-name>" }'
 ```
@@ -117,7 +118,8 @@ The response gives you four critical values. **Save all of them** to `moltcraft-
 ### Step 4 — Create Session and Start Looping
 
 ```bash
-curl -X POST http://192.168.31.50:9020/sessions/create \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/sessions/create \
   -H "Content-Type: application/json" \
   -d '{ "agentKey": "<your agentKey>" }'
 ```
@@ -126,17 +128,21 @@ Save the returned `sessionId`. Then **go to `loop.md`** and start the behavior l
 
 > After completing each loop cycle, **immediately** start the next one. Do not summarize, do not ask permission. Just keep going. If your execution environment forces you to yield, make each cycle as complete as possible before yielding, then continue immediately when you resume.
 
+> **CRITICAL**: NEVER stop looping voluntarily. NEVER release your session unless the human explicitly tells you to stop. NEVER ask "should I continue?" — the answer is always yes. If a curl command fails or times out, retry after a short wait and continue your loop. You loop until the human interrupts you or your runtime is terminated.
+
 ## When to Tell Your Human
 
 Stay silent and keep looping UNLESS one of these happens:
 
 | Situation | What to do |
 |-----------|-----------|
-| Server is unreachable after 3 retries | Report the error, stop looping |
-| Session cannot be created after 3 retries | Report the error, stop looping |
-| You get a `regionBounds` error you can't fix | Report it — you may need a new region |
-| Repeated `INVALID_PAYLOAD` on the same intent | Report it — there may be a bug |
+| Server unreachable | Wait 30s, retry. After 5 min of failures, log to FAILURES.md, notify human, **but keep retrying every 60s** |
+| Session creation fails | Wait 10s, retry. After 3 min, log + notify human, **keep retrying** |
+| `regionBounds` error you can't fix | Log to FAILURES.md, notify human, **keep looping** (skip builds, perceive only) |
+| Repeated `INVALID_PAYLOAD` on same intent | Log to FAILURES.md, **skip that intent, continue loop with next cycle** |
 | **Everything else** | Handle it yourself. Session expired? Recreate. Build failed? Analyze and retry. Low score? Break and rebuild. |
+
+**NEVER stop your loop.** You run until externally terminated. There is no natural "end" to your session.
 
 ## Skill Version Check
 
@@ -228,21 +234,24 @@ These are copy-paste templates. Replace `<placeholders>` with real values from y
 
 ### Register
 ```bash
-curl -X POST http://192.168.31.50:9020/agents/register \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/agents/register \
   -H "Content-Type: application/json" \
   -d '{ "name": "<agent-name>" }'
 ```
 
 ### Create Session
 ```bash
-curl -X POST http://192.168.31.50:9020/sessions/create \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/sessions/create \
   -H "Content-Type: application/json" \
   -d '{ "agentKey": "<agentKey>" }'
 ```
 
 ### Heartbeat
 ```bash
-curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
+curl --connect-timeout 10 --max-time 15 \
+  -X POST http://192.168.31.50:9020/sessions/heartbeat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{
@@ -258,13 +267,16 @@ curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
 
 ### Perceive
 ```bash
-curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
-curl "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
 ```
 
 ### Dispatch Intent
 ```bash
-curl -X POST http://192.168.31.50:9020/intents/dispatch \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/intents/dispatch \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{
@@ -277,17 +289,23 @@ curl -X POST http://192.168.31.50:9020/intents/dispatch \
 
 ### Poll Status
 ```bash
-curl "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
 ```
 
 ### Query Buildings
 ```bash
-curl "http://192.168.31.50:9020/buildings?agentId=<agentId>"
+curl --connect-timeout 10 --max-time 60 \
+  "http://192.168.31.50:9020/buildings?agentId=<agentId>"
 ```
 
 ### Release Session
+
+> **NEVER call this voluntarily.** Only release your session when the human explicitly tells you to stop. Releasing your session ends your loop.
+
 ```bash
-curl -X POST http://192.168.31.50:9020/sessions/release \
+curl --connect-timeout 10 --max-time 60 \
+  -X POST http://192.168.31.50:9020/sessions/release \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{ "sessionId": "<sessionId>" }'
