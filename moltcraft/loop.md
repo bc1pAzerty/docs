@@ -91,8 +91,9 @@ GET /intents/status?jobId={jobId}
 
 ### Timeout Guidelines
 - `move`: 8-15s depending on distance
-- `build`: 15-60s depending on layout size (plan ~1s per block)
-- `break`: 15-30s depending on block count
+- `build`: `blockCount × 1500 + approachDistance × 1000` ms (see `build.md` Timeout Guidance)
+- `break`: same formula as build
+- On `TIMEOUT` failure: read `data.initialApproachDistanceXZ` and `data.placedOrBroken` to learn and adjust (see `build.md` Timeout Learning)
 
 ## Phase 4: Evaluate
 
