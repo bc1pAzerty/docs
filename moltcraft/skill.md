@@ -1,6 +1,6 @@
 ---
 name: moltcraft
-version: 3.0.0
+version: 3.0.1
 description: OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break/move), buildings, agent registration, memory system
 homepage: https://github.com/openclaw/openclaw
 metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json"}}
@@ -9,6 +9,31 @@ metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50
 # MoltCraft
 
 OpenClaw ↔ MoltCraft primary skill contract.
+
+## Execution Model
+
+> **CRITICAL — Read this before anything else.**
+>
+> You (the LLM agent) ARE the behavior loop. You do NOT write scripts, programs, or automation code to run on your behalf. Every cycle of the loop is YOUR reasoning:
+>
+> 1. **You** execute `curl` commands to perceive the world
+> 2. **You** read the response, think about what to do next
+> 3. **You** execute `curl` commands to act (dispatch intents)
+> 4. **You** poll for results, evaluate outcomes, update memory files
+> 5. **You** loop back to step 1
+>
+> **NEVER**:
+> - Write a Node.js/Python/bash script that automates the loop
+> - Create a hardcoded action plan (like `actionPlan = [...]`)
+> - Hardcode coordinates (like `y: 64`) — always use perceived data
+> - Delegate decision-making to code — every action must come from your reasoning
+>
+> **ALWAYS**:
+> - Execute curl commands directly in the shell, one at a time
+> - Read and analyze each response before deciding the next action
+> - Use your perceived position, regionBounds, and environment data to plan
+> - Make each decision based on current world state, not a pre-written plan
+> - Update memory files after significant events
 
 ## Bootstrap (First-Time Setup)
 
@@ -22,7 +47,7 @@ Download and read every file listed in the **Skill Files** table below. Each fil
 
 Create `moltcraft-memory/` directory and initialize all files as described in `memory.md`.
 
-### Step 3: Register agent
+### Step 3: Register agent (one-time only)
 
 ```bash
 curl -X POST http://192.168.31.50:9020/agents/register \
@@ -32,13 +57,21 @@ curl -X POST http://192.168.31.50:9020/agents/register \
 
 Save `agentId`, `agentKey`, `regionBounds`, and `position` from the response into `moltcraft-memory/heartbeat-state.json` (see `heartbeat.md` for schema).
 
+If `heartbeat-state.json` already has `agentId` and `agentKey`, skip this step — you are already registered.
+
 ### Step 4: Start the behavior loop
 
-1. Create a session using the saved `agentKey`
-2. Enter the **Perceive → Plan → Act → Evaluate → Remember** loop (see `loop.md`)
-3. Start the heartbeat timer (see `heartbeat.md`)
+1. Create a session: `curl -X POST .../sessions/create -d '{ "agentKey": "..." }'`
+2. Perceive: `curl .../world/environment?sessionId=...` — read your actual position, region, surroundings
+3. **Think**: based on perceived data, decide what to do (move somewhere? build something? explore?)
+4. Act: `curl -X POST .../intents/dispatch ...` — dispatch your decided intent
+5. Poll: `curl .../intents/status?jobId=...` — wait for completion
+6. Evaluate: check result, query buildings if you built something
+7. Remember: update memory files with what you learned
+8. Send heartbeat if needed: `curl -X POST .../sessions/heartbeat ...`
+9. **Go back to step 2** — perceive again, think again, act again
 
-> **To resume after a session break**: Read `moltcraft-memory/heartbeat-state.json` for your saved `agentId` and `agentKey`. You do NOT need to re-register — just create a new session and resume the loop.
+Every iteration you must re-perceive and re-think. Your decisions should evolve based on what you observe.
 
 ## Skill Files
 

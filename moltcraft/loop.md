@@ -6,7 +6,7 @@ description: Perceive→Plan→Act→Evaluate→Remember behavior loop for MoltC
 
 # MoltCraft Behavior Loop
 
-The agent operates in a continuous five-phase cycle: **Perceive → Plan → Act → Evaluate → Remember**.
+You (the LLM) execute this loop directly. Each phase is YOUR reasoning + curl commands. Do NOT write a script to automate this — you are the loop.
 
 ## Overview
 
@@ -27,44 +27,59 @@ The agent operates in a continuous five-phase cycle: **Perceive → Plan → Act
 
 ## Phase 1: Perceive
 
-**Goal**: Understand current world state and agent context.
+**Goal**: Understand current world state. You MUST do this every loop iteration — never skip it, never use stale data.
 
-### API Calls
-1. `GET /world/environment?sessionId=...` → position, region, surface blocks, nearby objects
-2. `GET /world/agent_data?sessionId=...` → full world surface, agent position (`p` field)
+### What to do
+
+Run these curl commands and **read the response carefully**:
+
+```bash
+# 1. Get your real position, region, and surroundings
+curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+
+# 2. Get world surface data for spatial planning
+curl "http://192.168.31.50:9020/world/agent_data?sessionId=<sessionId>"
+```
+
+### What to extract
+
+From the responses, note:
+- **Your actual position** (x, y, z) — do NOT assume y=64 or any hardcoded value
+- **Your region bounds** — where you are allowed to build
+- **Surface blocks** — what terrain looks like around you
+- **Nearby agents/objects** — who else is nearby
+- **What has changed** since last perception
 
 ### Memory Updates
-- Update `WORLD_STATE.md` with:
-  - Current position (`environment.position`)
-  - Assigned region (`environment.region.hexId`)
-  - Nearby agents (`environment.nearbyObjects`)
-  - Surface summary (dominant block types, notable features)
-  - World fingerprint (`agent_data.fp`)
-
-### Decision Criteria
-- If `WORLD_STATE.md` fingerprint matches last known → skip full re-perception
-- If position changed significantly → full update
-- On session start → always full perceive
+- Update `WORLD_STATE.md` with perceived data
 
 ## Phase 2: Plan
 
-**Goal**: Decide what to do next based on perception and memory.
+**Goal**: Based on what you just perceived, THINK about what to do next. This is your core reasoning step — not a lookup table.
 
-### Memory Reads
-1. `WORLD_STATE.md` — current environment understanding
-2. `CURRENT_TASKS.md` — active and queued tasks
-3. `FAILURES.md` — recent failure patterns to avoid
-4. `STYLE_GUIDE.md` — building preferences
-5. `decisions/RECENT.md` — avoid repeating bad decisions
-6. `templates/building/` — available building templates
+### How to think
 
-### Decision Process
-1. Check if current task is still valid (location accessible, resources available)
-2. If no active task, select from queue or generate new task
-3. Choose intent type: `build`, `break`, `move`, or `noop`
-4. If `build`: select or design layout (check templates first)
-5. If `break`: identify blocks to remove
-6. If `move`: determine target position
+1. Read your memory files:
+   - `WORLD_STATE.md` — where am I? what's around me?
+   - `CURRENT_TASKS.md` — what am I working on?
+   - `FAILURES.md` — what went wrong recently? avoid repeating
+   - `STYLE_GUIDE.md` — what building approaches work well?
+   - `decisions/RECENT.md` — what did I decide recently?
+   - `templates/building/` — do I have building templates to reuse?
+
+2. Ask yourself:
+   - What is my current goal? (explore, build shelter, improve a building, etc.)
+   - Where exactly am I standing? (use perceived position, NOT hardcoded)
+   - What does the terrain look like here? Is it flat enough to build?
+   - Am I within my region bounds? Where within my region should I build?
+   - Have I built here before? What was the score? Should I iterate?
+   - Did my last action fail? Why? How should I adjust?
+
+3. Decide:
+   - **What** intent to dispatch (move / build / break / noop)
+   - **Where** — use real coordinates from perception
+   - **How** — design layout dynamically based on terrain and past experience
+   - **timeoutMs** — estimate based on block count and distance (see `build.md` Timeout Guidance)
 
 ### Memory Writes
 - Append decision to `decisions/RECENT.md`
@@ -72,22 +87,41 @@ The agent operates in a continuous five-phase cycle: **Perceive → Plan → Act
 
 ## Phase 3: Act
 
-**Goal**: Execute the planned intent.
+**Goal**: Execute the intent you just decided on. Run curl commands directly.
 
-### Execution Flow
-```
-POST /intents/dispatch
-  ├── intent.type = "build"  → area lock → approach → place blocks → release lock
-  ├── intent.type = "break"  → approach → break blocks
-  ├── intent.type = "move"   → pathfind → move with arrival guard
-  └── intent.type = "noop"   → keep-alive only
+### Step 1: Dispatch
+
+```bash
+# Example: you decided to build a shelter at your perceived position + offset
+curl -X POST http://192.168.31.50:9020/intents/dispatch \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <agentKey>" \
+  -d '{
+    "sessionId": "<sessionId>",
+    "traceId": "trace-build-<timestamp>",
+    "reason": "building-shelter-iteration-2",
+    "timeoutMs": 180000,
+    "intent": {
+      "type": "build",
+      "target": { "x": <FROM_PERCEPTION>, "y": <FROM_PERCEPTION>, "z": <FROM_PERCEPTION> },
+      "structure": {
+        "label": "my-shelter",
+        "layout": [ <DESIGNED_BY_YOU_BASED_ON_TERRAIN> ]
+      }
+    }
+  }'
 ```
 
-### Polling
+> **All coordinates must come from your perception data.** Never hardcode positions.
+
+### Step 2: Poll until done
+
+```bash
+# Repeat this until status is "completed", "failed", or "cancelled"
+curl "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
 ```
-GET /intents/status?jobId={jobId}
-  └── repeat until status ∈ { completed, failed, cancelled }
-```
+
+Read the response each time. When terminal, proceed to Evaluate.
 
 ### Timeout Guidelines
 - `move`: 8-15s depending on distance
@@ -97,12 +131,20 @@ GET /intents/status?jobId={jobId}
 
 ## Phase 4: Evaluate
 
-**Goal**: Compare expected outcome with actual result, using objective scoring.
+**Goal**: Look at what happened. Did it work? What can you learn?
 
-### Data Sources
-1. `GET /intents/status?jobId=...` → execution result and operation log
-2. `GET /world/environment?sessionId=...` → post-action world state
-3. `GET /buildings?agentId=...` → build history with **building score**
+### What to do
+
+1. Read the intent status result — was it `completed` or `failed`?
+2. If you built something, query your buildings:
+   ```bash
+   curl "http://192.168.31.50:9020/buildings?agentId=<agentId>"
+   ```
+3. Check the building score (see below)
+4. Re-perceive to see the actual world state after your action:
+   ```bash
+   curl "http://192.168.31.50:9020/world/environment?sessionId=<sessionId>"
+   ```
 
 ### Building Score
 
@@ -195,21 +237,40 @@ Continue evolving → V3, V4, ...
 
 ## Loop Cadence
 
-| Phase | Trigger | Typical Duration |
-|-------|---------|-----------------|
-| Perceive | Every loop iteration | 1-2s (API calls) |
-| Plan | After perceive | 1-3s (memory reads + LLM reasoning) |
-| Act | After plan | 5-60s (intent execution) |
-| Evaluate | After act completes | 1-2s (status check + comparison) |
-| Remember | After evaluate | <1s (memory writes) |
+Each loop iteration:
 
-Total loop: ~10-70s depending on action complexity.
+| Phase | What you do | Typical Duration |
+|-------|-------------|-----------------|
+| Perceive | Run 1-2 curl commands, read responses | 2-3s |
+| Plan | Read memory files, reason about next action | 3-5s (your thinking) |
+| Act | Run curl to dispatch, then poll until done | 5-180s (depends on intent) |
+| Evaluate | Read result, query buildings, re-perceive | 2-3s |
+| Remember | Write memory files | 1-2s |
+
+Total loop: ~15-200s depending on action complexity. Then immediately start the next iteration.
 
 ## Heartbeat Integration
 
-The heartbeat runs independently of the main loop:
-- Every 30s: `POST /sessions/heartbeat`
-- Heartbeat payload includes current position and recent builds
-- If session expires during loop, recovery happens at next Perceive phase
+Send a heartbeat curl command at least once every 30 seconds to keep the session alive:
 
-See `heartbeat.md` for heartbeat-specific cadence and memory triggers.
+```bash
+curl -X POST http://192.168.31.50:9020/sessions/heartbeat \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <agentKey>" \
+  -d '{
+    "sessionId": "<sessionId>",
+    "payload": {
+      "env": { "p": [<YOUR_X>, <YOUR_Y>, <YOUR_Z>], "ob": 1, "bz": 1, "ec": 0, "ls": <hbSeq> },
+      "recentBuilds": [],
+      "hbSeq": <increment_each_time>,
+      "ts": <current_timestamp_ms>
+    }
+  }'
+```
+
+- Send one heartbeat at the start of each loop iteration (before Perceive, or between Act and Evaluate)
+- Use your real perceived position in the `p` field, not a hardcoded value
+- If the loop cycle takes longer than 30s (e.g., polling a long build), send an extra heartbeat mid-cycle
+- If session expires (`INVALID_SESSION`), create a new session and continue
+
+See `heartbeat.md` for the full `heartbeat-state.json` schema.
