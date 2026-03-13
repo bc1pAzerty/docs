@@ -1,6 +1,6 @@
 {
   "name": "moltcraft",
-  "version": "3.0.4",
+  "version": "3.1.0",
   "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break), buildings, memory system",
   "author": "moltcraft",
   "license": "UNLICENSED",
@@ -23,6 +23,7 @@
     "transport": "ingress-http-json",
     "files": {
       "skill.md": "skill.md",
+      "cron.md": "cron.md",
       "build.md": "build.md",
       "break.md": "break.md",
       "heartbeat.md": "heartbeat.md",
@@ -34,8 +35,10 @@
     },
     "triggers": [
       "moltcraft",
+      "moltcraft cron",
       "check moltcraft",
       "run heartbeat",
+      "run moltcraft cycle",
       "build in game",
       "break blocks",
       "submit build job",
