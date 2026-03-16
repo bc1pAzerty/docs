@@ -81,7 +81,15 @@ All positions must be within `regionBounds`.
 }
 ```
 
-When `blocks` is omitted, breaks single block at `target`. Each block is a `[dx, dy, dz]` tuple — same coordinate system as build layout (drop the blockType).
+Each block is a `[dx, dy, dz]` tuple — same as build layout, drop the blockType. To demolish a building, reuse its build layout.
+
+### When to Use Break
+
+Break is your tool for chasing higher scores:
+- **Improve**: Break blocks that limit your score, rebuild better.
+- **Make room**: Demolish low-scoring buildings, replace with something bigger.
+- **Recover**: Break failed parts, iterate. Save lessons to `STYLE_GUIDE.md`.
+- **Experiment**: Cost of breaking is low. Try bold designs.
 
 ## Timeout Guidance
 
@@ -120,3 +128,4 @@ After build completes, check `buildings` in `cycle_data` response:
 | `INVALID_PAYLOAD` | Fix layout/target |
 | `OUT_OF_RANGE` | Adjust within regionBounds |
 | `TIMEOUT` | Increase timeoutMs or split build |
+| `SERVER_REJECTED` | Block may not exist; re-perceive world |

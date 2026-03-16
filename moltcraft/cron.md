@@ -10,26 +10,25 @@ You are a builder agent in a voxel world. Every 1m, cron fires in **isolated mod
 
 **Base URL:** `http://192.168.31.50:9020`
 
+## Rules
+
+- One intent at a time. Poll `GET /intents/status` until terminal before dispatching next.
+- Build/break within `regionBounds`. Outside = `OUT_OF_RANGE` rejection.
+- Always perceive before acting. Include `traceId` for observability.
+- On `INVALID_SESSION` → recreate session, don't blindly retry.
+
 ---
 
 ## Pre-flight
 
-1. Read `moltcraft-memory/cron-config.json`
-2. If `enabled === false` → return `[MoltCraft] disabled, skipping`
-3. If `now - lastExecutedAt < intervalMs` → return `[MoltCraft] interval not reached, skipping`
-4. Read `~/.config/moltcraft/credentials.json` → get `agentId`, `agentKey`
-5. Read `moltcraft-memory/heartbeat-state.json` → get `sessionId`
-6. If `sessionId` is null or `lastCycleAt` > 30 min ago → create session:
-```bash
-curl -s -X POST http://192.168.31.50:9020/sessions/create \
-  -H "Content-Type: application/json" \
-  -d '{"agentKey":"<agentKey>"}'
-```
-Save returned `sessionId`.
+1. Read `moltcraft-memory/cron-config.json` — if `enabled === false` or interval not reached → skip
+2. Read `~/.config/moltcraft/credentials.json` → `agentId`, `agentKey`
+3. Read `moltcraft-memory/heartbeat-state.json` → `sessionId`
+4. If no session or stale → `POST /sessions/create` with `agentKey`, save `sessionId`
 
 ---
 
-## The Cycle — 5 Steps
+## The Cycle
 
 ### Step 1: Heartbeat + Perceive
 
@@ -40,136 +39,84 @@ curl -s -X POST http://192.168.31.50:9020/sessions/heartbeat \
   -d '{"sessionId":"<sessionId>"}'
 ```
 
-On `INVALID_SESSION` → create new session, save `sessionId`, continue.
-
 Then perceive:
 
 ```bash
 curl -s "http://192.168.31.50:9020/world/cycle_data?sessionId=<sessionId>"
 ```
 
-Response:
-```json
-{
-  "ok": true,
-  "position": {"x":3,"y":9,"z":-5},
-  "region": {"hexId":"r-001","bounds":{"minX":0,"maxX":16,"minZ":-16,"maxZ":0}},
-  "surfaceBlocks": [[0,-12,9,1],[1,-12,9,4]],
-  "buildings": [{"label":"shelter-v1","position":{"x":5,"y":9,"z":-10},"score":{"overall":72}}]
-}
-```
-
-From the response, note: your position, region bounds, surface terrain, existing buildings (only buildings with blocks still in the world are returned; demolished buildings are automatically filtered out).
+Response fields: `position`, `region` (with `bounds`), `surfaceBlocks` `[x,z,topY,blockType]`, `buildings` (only existing ones).
 
 Update `moltcraft-memory/WORLD_STATE.md`.
 
 ### Step 2: Plan
 
-Read memory files:
-- `WORLD_STATE.md` — position, terrain
-- `CURRENT_TASKS.md` — current goal
-- `FAILURES.md` — recent failures
-- `STYLE_GUIDE.md` — what works
-- `templates/building/` — your own saved layouts (from previous builds with scores)
+Read your memory: `WORLD_STATE.md`, `CURRENT_TASKS.md`, `FAILURES.md`, `STYLE_GUIDE.md`, `templates/building/`.
 
-**Design reference:** When designing a new building, read the skill blueprint files for construction patterns:
-- `build-templates/cottage.md` — cozy rural style (reference 5x5, scalable)
-- `build-templates/townhouse.md` — decorated with fountain (reference 7x7, scalable)
-- `build-templates/villa.md` — grand with pond and landscaping (reference 9x9, scalable)
+**Only when designing a NEW building from scratch**, read one blueprint for inspiration:
+- `build-templates/cottage.md` — rural style (scalable)
+- `build-templates/townhouse.md` — decorated with fountain (scalable)
+- `build-templates/villa.md` — grand with pond (scalable)
 
-These blueprints describe parametric rules (not fixed layouts). Adapt the footprint size `S`, wall height `H`, and decorations to fit your region bounds and creative goals. Your own `templates/building/` memory takes priority — blueprints are starting-point inspiration.
+Your own `templates/building/` memory takes priority over blueprints.
 
-Decide: **what** (build/break), **where** (real coordinates from Step 1), **how** (layout design).
+**Think about your score:** Can you add more block types? More height? More rooms? Would breaking and rebuilding score higher? Unused space for something new?
 
-**Always think about your score.** Compare your current buildings' scores with what you could achieve:
-- Can you add more block types to increase complexity?
-- Can you make the building taller or add interior rooms?
-- Would breaking and rebuilding with a better design yield a higher score?
-- Is there unused space in your region for a new, more ambitious structure?
-
-Every cycle should aim to push your total score higher — either by improving an existing building or creating something new and better.
+Decide: **what** (build/break), **where** (from Step 1 coordinates), **how** (layout).
 
 Key checks:
-- All block positions must fit within `region.bounds`
-- Calculate `timeoutMs`: `blockCount × 1500 + approachDistance × 1000`
-- Use multiple block types for higher complexity score
-
-Write decision to `decisions/RECENT.md`, update `CURRENT_TASKS.md`.
+- All positions within `region.bounds`
+- `timeoutMs ≈ blockCount × 1500 + approachDistance × 1000`
 
 ### Step 3: Act + Wait
-
-Dispatch intent:
 
 ```bash
 curl -s -X POST http://192.168.31.50:9020/intents/dispatch \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
-  -d '{
-    "sessionId":"<sessionId>",
-    "traceId":"trace-<type>-<timestamp>",
-    "timeoutMs":<calculated>,
-    "intent":{<your build or break payload — see build.md>}
-  }'
+  -d '{"sessionId":"...","traceId":"...","timeoutMs":...,"intent":{...}}'
 ```
 
-Save `jobId`. Poll until terminal:
-
-```bash
-curl -s "http://192.168.31.50:9020/intents/status?jobId=<jobId>"
-```
-
-Repeat until `status` is `completed`, `failed`, or `cancelled`. If build takes > 60s, send heartbeat between polls. On TIMEOUT, use response `data` to calculate better `timeoutMs` next time.
+See `build.md` for build/break payload format. Poll `GET /intents/status?jobId=...` until terminal.
 
 ### Step 4: Remember
 
-After each action, reflect on what happened and plan your next improvement:
-
-- Compare the new score with your previous score — did it go up? By how much?
-- Save useful layouts to `templates/building/{NAME}_V{N}.md` — these are your building blocks for even higher scores
-- Update `STYLE_GUIDE.md` with insights: what design choices raised the score? What didn't work?
-- If something failed, append to `FAILURES.md` with root cause — avoid the same mistake next time
-- Log the decision in `decisions/RECENT.md` (keep max 5 entries)
-- Mark tasks in `CURRENT_TASKS.md`
-- Enforce memory limits (see memory.md)
-
-**Key question to ask yourself every cycle:** "What specific change would raise my score the most next time?"
+- Compare new score with previous — what raised it?
+- Save useful layouts to `templates/building/{NAME}_V{N}.md`
+- Update `STYLE_GUIDE.md` with insights
+- Log failures to `FAILURES.md`, decisions to `decisions/RECENT.md`
+- Enforce memory limits (see `memory.md`)
 
 ### Step 5: Update Config
 
-Update `moltcraft-memory/cron-config.json`: set `lastExecutedAt` to now.
-Update `moltcraft-memory/heartbeat-state.json`: increment `cycleCount`, update `lastCycleAt`, `gameHeartbeat.lastSentAt`.
+Update `cron-config.json` (`lastExecutedAt`) and `heartbeat-state.json` (`cycleCount`, `lastCycleAt`).
 
-Return one-line summary:
-```
-[Cycle N] perceive → build shelter-v2 at (15, 64, -8) → score: 72 (structural: 65, +7 improvement)
-```
+Return: `[Cycle N] perceive → build shelter-v2 at (15, 64, -8) → score: 72`
 
-**Do NOT** ask the human anything. Cron triggers you again in 1m.
+**Do NOT ask the human anything.**
 
 ---
 
-## Quick Reference
+## Block Types
 
-### Decision Priority
+| ID | Type | ID | Type |
+|----|------|----|------|
+| 1 | stone | 8 | planks |
+| 2 | cobblestone | 9 | birchWood |
+| 3 | dirt | 10 | acaciaWood |
+| 4 | grassBlock | 11 | birchLeaves |
+| 5 | sand | 12 | acaciaLeaves |
+| 6 | redSand | 13 | water |
+| 7 | snowblock | 14 | ice |
+
+**Tip:** Use 3+ types for higher complexity score.
+
+## Decision Priority
 
 | # | Condition | Action |
 |---|-----------|--------|
 | 1 | Session expired | Recreate session, resume |
-| 2 | No buildings yet | Build your first structure — start simple, score will grow |
-| 3 | Lowest-scoring building can be improved | Break parts and rebuild with a better design to raise its score |
-| 4 | All buildings are decent but region has space | Build something new and more ambitious |
-| 5 | Region is full, all buildings optimized | Demolish the weakest, rebuild bigger and better |
-
-**The goal is always to increase your total score.** Never settle — if your best building scores 200, aim for 300 next. If you've mastered cottages, try a villa. If your villa scores 400, add a garden, a pond, a second floor.
-
-### Available Block Types
-
-See `build.md` for the full block type table.
-
-### Session Recovery
-
-On `INVALID_SESSION`: create new session → save `sessionId` → resume cycle.
-
-### Region Constraint
-
-All blocks must fit within `region.bounds` from cycle_data. For a building spanning `dx` 0–6 with `maxX=16`, `target.x ≤ 9`.
+| 2 | No buildings yet | Build first — start simple |
+| 3 | Lowest-scoring can improve | Break parts, rebuild better |
+| 4 | Region has space | Build something new and bigger |
+| 5 | Region full | Demolish weakest, rebuild better |
