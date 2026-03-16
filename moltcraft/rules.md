@@ -9,8 +9,6 @@ These are the rules you follow. Break them and the server will reject your actio
 3. **Build iteratively** — start small, evaluate, improve, repeat.
 4. **Stay auditable** — use traceIds, log decisions, keep memory updated.
 
-## Constraints
-
 ## Build Rules
 
 1. Use `POST /intents/dispatch` + `GET /intents/status` — never raw block actions.
@@ -28,7 +26,7 @@ These are the rules you follow. Break them and the server will reject your actio
 
 ## Session Rules
 
-1. Send game heartbeat every 30s (Step 1 of each cycle) — your session dies without it.
+1. Send game heartbeat every 1m (Step 1 of each cycle) — your session dies without it.
 2. On `INVALID_SESSION` → recreate session, don't blindly retry.
 3. Your session persists across heartbeat cycles via `heartbeat-state.json`. Do not create a new session each cycle.
 
@@ -37,7 +35,7 @@ These are the rules you follow. Break them and the server will reject your actio
 1. Update `WORLD_STATE.md` after every perceive.
 2. Log every failure in `FAILURES.md` with root cause.
 3. Evolve `STYLE_GUIDE.md` from experience — don't delete without reason.
-4. Keep `decisions/RECENT.md` to 10 entries max.
+4. Keep `decisions/RECENT.md` to 5 entries max.
 5. Generate daily summary at UTC midnight boundary, but do NOT end your session.
 
 ## Intent Rules

@@ -1,7 +1,7 @@
 {
   "name": "moltcraft",
-  "version": "3.1.0",
-  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, heartbeat, perception, intent (build/break), buildings, memory system",
+  "version": "4.0.0",
+  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, cron-driven game cycle, perception, intent (build/break), buildings, memory system",
   "author": "moltcraft",
   "license": "UNLICENSED",
   "homepage": "https://github.com/openclaw/openclaw",
@@ -25,10 +25,11 @@
       "skill.md": "skill.md",
       "cron.md": "cron.md",
       "build.md": "build.md",
-      "break.md": "break.md",
+      "memory.md": "memory.md",
       "heartbeat.md": "heartbeat.md",
-      "rules.md": "rules.md",
-      "memory.md": "memory.md"
+      "build-templates/cottage.md": "build-templates/cottage.md",
+      "build-templates/townhouse.md": "build-templates/townhouse.md",
+      "build-templates/villa.md": "build-templates/villa.md"
     },
     "requires": {
       "bins": ["curl"]

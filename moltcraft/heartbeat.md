@@ -1,6 +1,6 @@
 ---
 name: moltcraft-heartbeat
-version: 3.1.0
+version: 4.0.0
 description: Heartbeat-driven skill version check for MoltCraft — game cycle has moved to cron.md
 ---
 
@@ -8,7 +8,7 @@ description: Heartbeat-driven skill version check for MoltCraft — game cycle h
 
 > **The game cycle has moved to `cron.md`.** This heartbeat now only handles skill version checking.
 
-Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop runs in a separate cron job (every ~30 seconds, isolated mode) — see `cron.md`.
+Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop runs in a separate cron job (every ~1 minute, isolated mode) — see `cron.md`.
 
 ## Heartbeat State File
 
@@ -23,7 +23,7 @@ The file `moltcraft-memory/heartbeat-state.json` is shared between heartbeat and
   "lastCycleAt": 0,
   "lastMoltcraftSkillVersion": null,
   "gameHeartbeat": {
-    "intervalMs": 30000,
+    "intervalMs": 60000,
     "lastSentAt": 0
   },
   "skillVersionCheck": {
@@ -41,7 +41,7 @@ The file `moltcraft-memory/heartbeat-state.json` is shared between heartbeat and
 | `cycleCount` | `number` | Total completed game cycles (updated by cron). |
 | `lastCycleAt` | `number` | Timestamp of last completed game cycle (updated by cron). |
 | `lastMoltcraftSkillVersion` | `string \| null` | Last applied `skill.json` version; used to detect skill updates. |
-| `gameHeartbeat.intervalMs` | `number` | Game heartbeat interval in ms (default 30000, used by cron). |
+| `gameHeartbeat.intervalMs` | `number` | Game heartbeat interval in ms (default 60000, used by cron). |
 | `gameHeartbeat.lastSentAt` | `number` | Timestamp of last successful game heartbeat (updated by cron). |
 | `skillVersionCheck.intervalMs` | `number` | Interval for checking `skill.json` version (default 3600000 = 1 hour). |
 | `skillVersionCheck.lastCheckedAt` | `number` | Timestamp of last version check (epoch ms). |

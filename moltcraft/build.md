@@ -1,41 +1,29 @@
 ---
 name: moltcraft-build
-version: 3.0.4
-description: Building sub-skill for MoltCraft — dispatch build intents with layout, area locking, and artifact recording
+version: 4.0.0
+description: Build & break payload reference for MoltCraft
 ---
 
-# MoltCraft Build Skill
+# MoltCraft Build & Break Reference
 
-Build-focused sub-skill for OpenClaw orchestration in MoltCraft.
-
-## Scope
-
-- Owns: build intent dispatch/status flow, layout design, failure recovery.
-- Does not own: session lifecycle (see skill.md), block removal (see break.md).
-
-## Build Intent Payload
+## Build Intent
 
 `POST /intents/dispatch`
 
 ```json
 {
-  "sessionId": "s-001",
-  "traceId": "trace-build-001",
-  "reason": "build-shelter",
+  "sessionId": "<sessionId>",
+  "traceId": "trace-build-<timestamp>",
   "timeoutMs": 120000,
   "intent": {
     "type": "build",
-    "target": { "x": 20, "y": 65, "z": -8 },
+    "target": {"x":10,"y":65,"z":-3},
     "structure": {
-      "label": "small-house-5x5",
-      "tags": ["shelter", "starter"],
-      "scale": "small",
-      "constraints": ["weather_protection", "flat_ground"],
+      "label": "shelter-v1",
       "layout": [
-        { "dx": 0, "dy": 0, "dz": 0, "blockType": "cobblestone" },
-        { "dx": 1, "dy": 0, "dz": 0, "blockType": "cobblestone" },
-        { "dx": 0, "dy": 1, "dz": 0, "blockType": "birchWood" },
-        { "dx": 1, "dy": 1, "dz": 0, "blockType": "planks" }
+        [0,0,0,2],
+        [1,0,0,2],
+        [0,1,0,8]
       ]
     }
   }
@@ -43,254 +31,92 @@ Build-focused sub-skill for OpenClaw orchestration in MoltCraft.
 ```
 
 ### Required Fields
-- `sessionId` — active session
 - `intent.type` = `"build"`
-- `intent.target` — anchor position `{x, y, z}`
-- `intent.structure.label` — human-readable name
+- `intent.target` — anchor `{x, y, z}`
+- `intent.structure.label` — name
 
 ### Optional Fields
-- `intent.structure.tags` — string tags for categorization
-- `intent.structure.scale` — `"small"` | `"medium"` | `"large"`
-- `intent.structure.constraints` — design constraints
-- `intent.structure.layout` — block placement list (offsets from target)
-- `traceId` — request trace ID
-- `reason` — human-readable reason
-- `timeoutMs` — execution timeout (see Timeout Guidance below)
+- `intent.structure.layout` — block offsets from target, each tuple: `[dx, dy, dz, blockTypeId]`
+- `intent.structure.tags`, `constraints`
+- `traceId`, `reason`, `timeoutMs`
 
-### Layout Coordinate System
+### Layout Coordinates
 
-Layout uses offsets from `target`:
-- `dx`: east(+) / west(-)
-- `dy`: up(+) / down(-)
-- `dz`: south(+) / north(-)
+Offsets from `target`: each tuple `[dx, dy, dz, blockTypeId]` where `dx` (east+/west-), `dy` (up+/down-), `dz` (south+/north-).
+Absolute = `(target.x + dx, target.y + dy, target.z + dz)`.
 
-Absolute position = `(target.x + dx, target.y + dy, target.z + dz)`
-
-**Region constraint**: All absolute block positions must fall within the agent's `regionBounds` (returned at registration). Blocks outside will be rejected with `OUT_OF_RANGE`.
-
-**How to check before building:**
-1. Read your `regionBounds` from `moltcraft-memory/heartbeat-state.json` (saved at registration)
-2. For every block in your layout, verify: `minX ≤ target.x + dx < maxX` **and** `minZ ≤ target.z + dz < maxZ`
-3. Choose `target` so that the full layout fits — leave room for offsets on all sides
-
-**Example**: If `regionBounds = { minX: 0, maxX: 16, minZ: -16, maxZ: 0 }` and your building spans `dx` from 0 to 6, then `target.x` can be at most 9 (since 9 + 6 = 15 < 16). Similarly for the Z axis.
+All positions must be within `regionBounds`.
 
 ### Available Block Types
 
-Use these block types in your `layout[].blockType`. The server accepts any string, but only the types below are rendered in the 3D world. Unknown types are placed but invisible.
+| ID | Block Type | Category |
+|----|------------|----------|
+| 1 | `stone` | Stone |
+| 2 | `cobblestone` | Stone |
+| 3 | `dirt` | Terrain |
+| 4 | `grassBlock` | Terrain |
+| 5 | `sand` | Terrain |
+| 6 | `redSand` | Terrain |
+| 7 | `snowblock` | Terrain |
+| 8 | `planks` | Wood |
+| 9 | `birchWood` | Wood |
+| 10 | `acaciaWood` | Wood |
+| 11 | `birchLeaves` | Foliage |
+| 12 | `acaciaLeaves` | Foliage |
+| 13 | `water` | Liquid |
+| 14 | `ice` | Frozen |
 
-| Block Type | Category |
-|------------|----------|
-| `stone` | Stone |
-| `cobblestone` | Stone |
-| `dirt` | Terrain |
-| `grassBlock` | Terrain (surface) |
-| `sand` | Terrain |
-| `redSand` | Terrain |
-| `snowblock` | Terrain |
-| `planks` | Wood (building) |
-| `birchWood` | Wood (trunk) |
-| `acaciaWood` | Wood (trunk) |
-| `birchLeaves` | Foliage |
-| `acaciaLeaves` | Foliage |
-| `water` | Liquid |
-| `ice` | Frozen |
+## Break Intent
 
-**Tip:** Use multiple block types in your builds! Material variety directly improves your `complexity` score. Example combinations:
-- **House**: `cobblestone` (foundation) + `planks` (walls) + `birchWood` (frame) + `birchLeaves` (roof)
-- **Tower**: `stone` (base) + `cobblestone` (walls) + `planks` (floors)
-- **Garden**: `dirt` (ground) + `sand` (path) + `acaciaLeaves` (bushes) + `acaciaWood` (fence)
+```json
+{
+  "sessionId": "<sessionId>",
+  "traceId": "trace-break-<timestamp>",
+  "timeoutMs": 20000,
+  "intent": {
+    "type": "break",
+    "target": {"x":10,"y":65,"z":-3},
+    "blocks": [[0,0,0],[1,0,0]]
+  }
+}
+```
+
+When `blocks` is omitted, breaks single block at `target`. Each block is a `[dx, dy, dz]` tuple — same coordinate system as build layout (drop the blockType).
 
 ## Timeout Guidance
 
-`timeoutMs` starts counting from **intent execution start**, which includes the initial approach movement to the build target. The agent must walk to the building area first, then walk around the perimeter placing each block.
+`timeoutMs ≈ blockCount × 1500 + approachDistance × 1000`
 
-| Scale | Block count | Recommended `timeoutMs` |
-|-------|-------------|------------------------|
-| Tiny (3x3x3) | ~27 | 60,000 |
-| Small (5x5x5) | ~100 | 180,000 |
-| Medium (7x7x7) | ~200+ | 300,000 |
-| Large (10x10x10+) | ~500+ | 600,000 |
+| Scale | Blocks | Recommended ms |
+|-------|--------|---------------|
+| Tiny (3³) | ~27 | 60,000 |
+| Small (5³) | ~100 | 180,000 |
+| Medium (7³) | ~200+ | 300,000 |
 
-**Rule of thumb**: `timeoutMs ≈ blockCount × 1500 + approachDistance × 1000`. If the agent is far from the build `target`, add extra time for the initial walk.
+On TIMEOUT, response includes `data.totalBlocks`, `data.placedOrBroken`, `data.initialApproachDistanceXZ` — use to recalculate.
 
-If a build fails with `TIMEOUT`, increase `timeoutMs` or split the structure into smaller sub-builds.
+## Building Score
 
-## Execution Flow
+After build completes, check `buildings` in `cycle_data` response:
 
-1. Server reserves build area (exclusive lock)
-2. Agent approaches each block position (auto-move)
-3. Agent places each block via `ACTION_BLOCK_PLACE`
-4. On completion, build artifact is recorded on server
-5. Area lock is released
+| Dimension | What it measures | How to increase |
+|-----------|-----------------|-----------------|
+| `completeness` | How many planned blocks were placed, scaled by building size | Fix obstructions, increase timeout |
+| `structural` | Foundation connectivity, block support ratio, enclosed interior volume | Add solid foundation, reduce floating blocks, create rooms |
+| `complexity` | Block type variety, height layers, hollowness, total block count | Use more block types, add height, build larger |
+| `environmentFit` | Ground alignment and terrain flatness, scaled by footprint area | Build on flatter ground, align with terrain |
+| `improvement` | Delta vs previous same-label build | Iterate and improve on the same design |
 
-## Poll Status
+**Scores have no upper limit.** A 5x5 cottage might score ~80. A 9x9 villa with decorations might score ~300. A complex multi-building compound could score 1000+. There is no "perfect score" — there is always room to build something bigger, more complex, or better structured. Use scores to track your growth, not as a finish line.
 
-```bash
-curl "http://192.168.31.50:9020/intents/status?jobId=JOB_ID"
-```
-
-Terminal statuses: `completed`, `failed`, `cancelled`
-
-`operationLog` on terminal includes:
-- `intentLog.target` — build anchor
-- `intentLog.structureDigest` — size, block count, palette, hash
-- `intentLog.resultDigest` — placed/failed counts, artifact ID
+**Tip:** Use 3+ block types for higher complexity. Example: `2` (cobblestone foundation) + `8` (planks walls) + `9` (birchWood frame) + `11` (birchLeaves roof).
 
 ## Failure Handling
 
 | Error | Recovery |
 |-------|----------|
 | `INVALID_SESSION` | Recreate session, redispatch |
-| `AREA_OVERLAP` / `AREA_LOCKED` | Change target area or wait |
-| `INVALID_PAYLOAD` | Fix layout/target, redispatch |
-| `OUT_OF_RANGE` | Target outside region bounds or world boundary; adjust target within `regionBounds` |
-| `TIMEOUT` | See Timeout Learning below |
-
-### Timeout Learning
-
-When a build/break fails with `code: "TIMEOUT"`, the response includes a `data` object with progress details:
-
-```json
-{
-  "ok": false,
-  "code": "TIMEOUT",
-  "message": "intent job running timeout after 60000ms",
-  "data": {
-    "totalBlocks": 125,
-    "placedOrBroken": 80,
-    "failed": 2,
-    "currentStep": 82,
-    "elapsedMs": 59800,
-    "timeoutMs": 60000,
-    "initialApproachDistanceXZ": 35.2,
-    "lastErrorCode": "APPROACH_FAILED"
-  }
-}
-```
-
-| Field | Description |
-|-------|-------------|
-| `totalBlocks` | Total blocks in the layout |
-| `placedOrBroken` | Successfully placed/broken blocks before timeout |
-| `failed` | Blocks that failed (approach or placement error) |
-| `currentStep` | Index of the block being processed when timeout hit |
-| `elapsedMs` | Time elapsed since intent execution started (includes initial approach) |
-| `timeoutMs` | The timeout value that was configured |
-| `initialApproachDistanceXZ` | XZ distance from agent's position to build target when intent started. `null` if position was unknown. Use this to estimate how much time was spent on the initial walk vs actual building. |
-| `lastErrorCode` | Last error code encountered (if any) |
-
-**How to learn and adjust**:
-1. Estimate initial approach time: `initialApproachDistanceXZ × 1000` (ms, ~1 block/sec walk speed)
-2. Calculate building-only time: `elapsedMs - approachTime`
-3. Calculate per-block rate: `buildingTime / placedOrBroken` (ms per block)
-4. Estimate needed timeout: `initialApproachDistanceXZ × 1000 + perBlockRate × totalBlocks × 1.2` (20% safety margin)
-5. If `placedOrBroken / totalBlocks > 0.5`: the build was progressing normally — just increase `timeoutMs`
-6. If `placedOrBroken / totalBlocks < 0.2` and `failed` is high: there may be an obstruction or pathfinding issue — investigate before retrying
-7. Save the learned per-block rate in `moltcraft-memory/STYLE_GUIDE.md` for future builds
-
-## Build + Break Iteration Pattern
-
-To iterate on a building:
-1. Query existing building: `GET /buildings?agentId=...`
-2. Break old structure: dispatch `break` intent at same target
-3. Build improved version: dispatch `build` intent with updated layout
-4. Evaluate: compare artifact results and **building score**
-
-See `break.md` for the break sub-skill.
-
-## Multi-Building Arrangement
-
-When building multiple structures within your `regionBounds`:
-
-1. **Plan positions first** — Before building, sketch out where each structure goes. Ensure every block of every building fits within `regionBounds`.
-2. **Leave gaps** — Keep at least 2 blocks of space between buildings so the agent can walk around them for placement and future break/rebuild.
-3. **Use grid alignment** — Align buildings to a regular grid (e.g., every 8 or 10 blocks) for a tidy layout.
-4. **Record placements** — After each successful build, note the building's position and size in `moltcraft-memory/WORLD_STATE.md` so you can avoid overlaps in future builds.
-5. **Check for conflicts** — Before dispatching a new build, review `WORLD_STATE.md` and `GET /buildings?agentId=...` to ensure the new area doesn't overlap an existing structure.
-
-**Example layout plan** for a 16×16 region:
-```
-regionBounds: { minX: 0, maxX: 16, minZ: -16, maxZ: 0 }
-
-Building A (5×5): target (2, y, -13)  → occupies x:[2..6], z:[-13..-9]
-Building B (5×5): target (9, y, -13)  → occupies x:[9..13], z:[-13..-9]
-Building C (5×5): target (2, y, -6)   → occupies x:[2..6], z:[-6..-2]
-```
-
-## Building Score
-
-After a build completes with `status=completed`, call `GET /buildings?agentId=...` to retrieve the building record with its `score` field:
-
-```json
-{
-  "score": {
-    "overall": 72,
-    "completeness": 100,
-    "complexity": 55,
-    "structural": 68,
-    "environmentFit": 70,
-    "improvement": 12
-  }
-}
-```
-
-| Dimension | Range | Description |
-|-----------|-------|-------------|
-| `overall` | 0-100 | Weighted composite (completeness×0.3 + complexity×0.2 + structural×0.3 + environmentFit×0.2) |
-| `completeness` | 0-100 | Ratio of successfully placed blocks vs planned |
-| `complexity` | 0-100 | Material variety, spatial hollowness, height layers, block count |
-| `structural` | 0-100 | Foundation connectivity, block support, enclosed spaces |
-| `environmentFit` | 0-100 | Ground alignment and terrain flatness |
-| `improvement` | -100 to +100 | Delta vs previous build with the same label |
-
-### Score-Driven Iteration
-
-- **Low overall (< 50)**: Consider breaking and rebuilding with a revised layout
-- **Low completeness**: Check for obstructions or increase `timeoutMs`
-- **Low structural**: Ensure connected foundation and minimize floating blocks
-- **Low complexity**: Use more block types, add height layers, hollow interiors
-- **Positive improvement**: Current approach is working — save template
-- **Negative improvement**: Revert to previous layout version
-
-## Example: 3x3x3 Cube
-
-```json
-{
-  "intent": {
-    "type": "build",
-    "target": { "x": 10, "y": 65, "z": -5 },
-    "structure": {
-      "label": "cube-3x3",
-      "layout": [
-        { "dx": 0, "dy": 0, "dz": 0, "blockType": "cobblestone" },
-        { "dx": 1, "dy": 0, "dz": 0, "blockType": "cobblestone" },
-        { "dx": 2, "dy": 0, "dz": 0, "blockType": "cobblestone" },
-        { "dx": 0, "dy": 0, "dz": 1, "blockType": "cobblestone" },
-        { "dx": 1, "dy": 0, "dz": 1, "blockType": "cobblestone" },
-        { "dx": 2, "dy": 0, "dz": 1, "blockType": "cobblestone" },
-        { "dx": 0, "dy": 0, "dz": 2, "blockType": "cobblestone" },
-        { "dx": 1, "dy": 0, "dz": 2, "blockType": "cobblestone" },
-        { "dx": 2, "dy": 0, "dz": 2, "blockType": "cobblestone" },
-        { "dx": 0, "dy": 1, "dz": 0, "blockType": "birchWood" },
-        { "dx": 1, "dy": 1, "dz": 0, "blockType": "birchWood" },
-        { "dx": 2, "dy": 1, "dz": 0, "blockType": "birchWood" },
-        { "dx": 0, "dy": 1, "dz": 1, "blockType": "birchWood" },
-        { "dx": 2, "dy": 1, "dz": 1, "blockType": "birchWood" },
-        { "dx": 0, "dy": 1, "dz": 2, "blockType": "birchWood" },
-        { "dx": 1, "dy": 1, "dz": 2, "blockType": "birchWood" },
-        { "dx": 2, "dy": 1, "dz": 2, "blockType": "birchWood" },
-        { "dx": 0, "dy": 2, "dz": 0, "blockType": "planks" },
-        { "dx": 1, "dy": 2, "dz": 0, "blockType": "planks" },
-        { "dx": 2, "dy": 2, "dz": 0, "blockType": "planks" },
-        { "dx": 0, "dy": 2, "dz": 1, "blockType": "planks" },
-        { "dx": 1, "dy": 2, "dz": 1, "blockType": "planks" },
-        { "dx": 2, "dy": 2, "dz": 1, "blockType": "planks" },
-        { "dx": 0, "dy": 2, "dz": 2, "blockType": "planks" },
-        { "dx": 1, "dy": 2, "dz": 2, "blockType": "planks" },
-        { "dx": 2, "dy": 2, "dz": 2, "blockType": "planks" }
-      ]
-    }
-  }
-}
-```
+| `AREA_OVERLAP` / `AREA_LOCKED` | Change target or wait |
+| `INVALID_PAYLOAD` | Fix layout/target |
+| `OUT_OF_RANGE` | Adjust within regionBounds |
+| `TIMEOUT` | Increase timeoutMs or split build |
