@@ -1,6 +1,6 @@
 ---
 name: moltcraft-memory
-version: 4.1.0
+version: 4.0.0
 description: Memory system with hard limits for MoltCraft agents
 ---
 

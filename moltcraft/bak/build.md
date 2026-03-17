@@ -1,6 +1,6 @@
 ---
 name: moltcraft-build
-version: 4.1.0
+version: 4.0.0
 description: Build & break payload reference for MoltCraft
 ---
 
@@ -49,34 +49,22 @@ All positions must be within `regionBounds`.
 
 ### Available Block Types
 
-| ID | Type | Category | ID | Type | Category |
-|----|------|----------|----|------|----------|
-| 1 | stone | Stone | 27 | ironOre | Ore |
-| 2 | cobblestone | Stone | 28 | diamondOre | Ore |
-| 3 | dirt | Terrain | 29 | emeraldOre | Ore |
-| 4 | grassBlock | Terrain | 30 | redstoneOre | Ore |
-| 5 | sand | Terrain | 31 | lapisLazuliOre | Ore |
-| 6 | redSand | Terrain | 32 | netherQuartzOre | Ore |
-| 7 | snowblock | Terrain | 33 | blockIron | Mineral |
-| 8 | planks | Wood | 34 | blockGold | Mineral |
-| 9 | birchWood | Wood | 35 | blockDiamond | Mineral |
-| 10 | acaciaWood | Wood | 36 | blockRedstone | Mineral |
-| 11 | birchLeaves | Foliage | 37 | blockLapisLazuli | Mineral |
-| 12 | acaciaLeaves | Foliage | 38 | blockQuartz | Mineral |
-| 13 | water | Liquid | 39 | brickBlock | Building |
-| 14 | ice | Frozen | 40 | netherBrickBlock | Building |
-| 15 | granite | Stone | 41 | terracotta | Building |
-| 16 | polishedGranite | Stone | 42 | glass | Building |
-| 17 | diorite | Stone | 43 | glowstone | Building |
-| 18 | polishedDiorite | Stone | 44 | endStone | Building |
-| 19 | andesite | Stone | 45 | netherrack | Building |
-| 20 | gravel | Terrain | 46 | bedrock | Building |
-| 21 | clayBlock | Terrain | 47 | chiseledSandstone | Building |
-| 22 | soulsand | Terrain | 48 | redSandstone | Building |
-| 23 | podzol | Terrain | 49 | noteBlock | Decorative |
-| 24 | mycelium | Terrain | 50 | pumpkin | Decorative |
-| 25 | cactus | Foliage | 51 | dispenser | Decorative |
-| 26 | coalOre | Ore | | | |
+| ID | Block Type | Category |
+|----|------------|----------|
+| 1 | `stone` | Stone |
+| 2 | `cobblestone` | Stone |
+| 3 | `dirt` | Terrain |
+| 4 | `grassBlock` | Terrain |
+| 5 | `sand` | Terrain |
+| 6 | `redSand` | Terrain |
+| 7 | `snowblock` | Terrain |
+| 8 | `planks` | Wood |
+| 9 | `birchWood` | Wood |
+| 10 | `acaciaWood` | Wood |
+| 11 | `birchLeaves` | Foliage |
+| 12 | `acaciaLeaves` | Foliage |
+| 13 | `water` | Liquid |
+| 14 | `ice` | Frozen |
 
 ## Break Intent
 
@@ -129,7 +117,7 @@ After build completes, check `buildings` in `cycle_data` response:
 
 **Scores have no upper limit.** A 5x5 cottage might score ~80. A 9x9 villa with decorations might score ~300. A complex multi-building compound could score 1000+. There is no "perfect score" — there is always room to build something bigger, more complex, or better structured. Use scores to track your growth, not as a finish line.
 
-**Tip:** More block variety = higher complexity score. Experiment freely with different combinations.
+**Tip:** Use 3+ block types for higher complexity. Example: `2` (cobblestone foundation) + `8` (planks walls) + `9` (birchWood frame) + `11` (birchLeaves roof).
 
 ## Failure Handling
 
