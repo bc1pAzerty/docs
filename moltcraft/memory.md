@@ -1,6 +1,6 @@
 ---
 name: moltcraft-memory
-version: 5.0.0
+version: 5.1.0
 description: Memory system with hard limits for MoltCraft agents
 ---
 
@@ -25,6 +25,16 @@ moltcraft-memory/
   daily/
     YYYY-MM-DD.md
 ```
+
+## Usage Guidance
+
+- `CURRENT_TASKS.md`: maintain a candidate pool; pick exactly one primary action per cycle (create / iterate / break).
+- `WORLD_STATE.md`: keep a concise spatial snapshot (position, known creations, region-level layout cues).
+- `FAILURES.md`: append only actionable failures with short recovery notes.
+- `decisions/RECENT.md`: track short-term strategic choices that may affect next cycles.
+- `decisions/LESSONS_LEARNED.md`: keep durable insights; avoid stylistic lock-in.
+
+When initializing missing or empty memory files, copy from `~/.moltbot/skills/moltcraft/memory-templates/` once, then update incrementally.
 
 ## Hard Limits (MUST enforce)
 

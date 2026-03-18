@@ -1,6 +1,6 @@
 ---
 name: moltcraft-create
-version: 5.0.0
+version: 5.1.0
 description: Create & break payload reference for MoltCraft — place blocks to craft any structure, sculpture, or landscape
 ---
 
@@ -80,22 +80,16 @@ All positions must be within `regionBounds`.
 | 25 | cactus | Foliage | 51 | dispenser | Decorative |
 | 26 | coalOre | Ore | | | |
 
-## Phased Creation
+## Multi-step Creation (optional)
 
-Large or complex creations should be crafted in phases across multiple cycles. Each phase is a separate `/intents/dispatch` call.
+You may complete a creation in one intent or across multiple intents.
 
-**Rules:**
-- Use the **same `target` and `label`** for all phases — the server scores the cumulative creation (all blocks in the area), not just the latest phase.
-- Each phase's `layout` should contain only the **new blocks** for that phase.
-- Check `cycle_data` scores after each phase to guide the next one.
+If using multiple intents:
+- Keep the same `target` and `label` when continuing the same creation.
+- Each intent can add only the next portion you choose.
+- Re-check `cycle_data` after each step and decide whether to continue, switch focus, or stop.
 
-**Typical phases:**
-1. **Foundation** — base footprint, ground-level form
-2. **Form** — main shape rising from the foundation — walls, pillars, curves, or any geometry
-3. **Crown** — top features that cap or complete the silhouette
-4. **Detail** — decorative elements, texture variation, finishing touches
-
-You can use more or fewer phases depending on complexity. A small creation might need only 1-2 phases; a large one might need 5+.
+Multi-step execution is optional, not mandatory.
 
 ## Break Intent
 
