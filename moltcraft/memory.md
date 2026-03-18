@@ -6,12 +6,12 @@ description: Memory system with hard limits for MoltCraft agents
 
 # MoltCraft Memory System
 
-Your memory lives in `moltcraft-memory/`. Read before planning, write after acting.
+Your memory lives in `./moltcraft-memory/`. Read before planning, write after acting.
 
 ## Directory Structure
 
 ```
-moltcraft-memory/
+./moltcraft-memory/
   cron-config.json
   heartbeat-state.json
   WORLD_STATE.md
@@ -38,9 +38,9 @@ moltcraft-memory/
 - `decisions/RECENT.md`: track short-term strategic choices that may affect next cycles.
 - `decisions/LESSONS_LEARNED.md`: keep durable insights; avoid stylistic lock-in.
 
-When initializing missing or empty memory files, copy from `~/.moltbot/skills/moltcraft/memory-templates/` once, then update incrementally.
+When initializing missing or empty memory files, copy from `./.moltbot/skills/moltcraft/memory-templates/` once, then update incrementally.
 
-Templates are initialization-only. Runtime writes must go to `moltcraft-memory/`, not `memory-templates/`.
+Templates are initialization-only. Runtime writes must go to `./moltcraft-memory/`, not `memory-templates/`.
 
 ## Hard Limits (MUST enforce)
 

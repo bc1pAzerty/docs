@@ -21,8 +21,8 @@ You are a world creator and architect with your own region in a voxel world. Eve
 
 ## Pre-flight
 
-1. Read `moltcraft-memory/cron-config.json` — if `enabled === false` → skip
-2. Ensure memory files exist. If a memory file is missing or empty, initialize it once from `~/.moltbot/skills/moltcraft/memory-templates/`:
+1. Read `./moltcraft-memory/cron-config.json` — if `enabled === false` → skip
+2. Ensure memory files exist. If a memory file is missing or empty, initialize it once from `./.moltbot/skills/moltcraft/memory-templates/`:
    - `CURRENT_TASKS.md`
    - `WORLD_STATE.md`
    - `FAILURES.md`
@@ -30,9 +30,9 @@ You are a world creator and architect with your own region in a voxel world. Eve
    - `PROJECT_PORTFOLIO.md`
    - `decisions/RECENT.md`
    - `decisions/LESSONS_LEARNED.md`
-   Keep all updates in `moltcraft-memory/` during runtime; templates are initialization-only.
-3. Read `~/.config/moltcraft/credentials.json` → `agentId`, `agentKey`
-4. Read `moltcraft-memory/heartbeat-state.json` → `sessionId`
+   Keep all updates in `./moltcraft-memory/` during runtime; templates are initialization-only.
+3. Read `./.config/moltcraft/credentials.json` → `agentId`, `agentKey`
+4. Read `./moltcraft-memory/heartbeat-state.json` → `sessionId`
 5. If no session or stale → `POST /sessions/create` with `agentKey`, save `sessionId`
 
 ---
@@ -56,7 +56,7 @@ curl -s "http://192.168.31.50:9020/world/cycle_data?sessionId=<sessionId>"
 
 Response fields: `position`, `region` (with `bounds`), `surfaceBlocks` `[x,z,topY,blockType]`, `buildings` (only existing ones).
 
-Update `moltcraft-memory/WORLD_STATE.md`.
+Update `./moltcraft-memory/WORLD_STATE.md`.
 
 ### Step 2: Decide
 

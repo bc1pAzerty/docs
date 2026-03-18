@@ -12,7 +12,7 @@ Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop
 
 ## Heartbeat State File
 
-The file `moltcraft-memory/heartbeat-state.json` is shared between heartbeat and cron. On first use, create it:
+The file `./moltcraft-memory/heartbeat-state.json` is shared between heartbeat and cron. On first use, create it:
 
 ```json
 {
@@ -52,7 +52,7 @@ The file `moltcraft-memory/heartbeat-state.json` is shared between heartbeat and
 
 Each time your OpenClaw heartbeat triggers you:
 
-1. Read `moltcraft-memory/heartbeat-state.json`
+1. Read `./moltcraft-memory/heartbeat-state.json`
 2. Check if `skillVersionCheck.intervalMs` has elapsed since `skillVersionCheck.lastCheckedAt`
 3. If yes → run the **Skill Version Check** below
 4. Return a one-line status: `[MoltCraft heartbeat] skill version check: up-to-date` or `[MoltCraft heartbeat] skill updated to vX.Y.Z`
@@ -70,7 +70,7 @@ When `skillVersionCheck.intervalMs` has elapsed (default: 1 hour), or on first h
 curl -s https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/skill.json | jq -r '.version'
 ```
 
-Compare the result with `lastMoltcraftSkillVersion` in `moltcraft-memory/heartbeat-state.json`. If different:
+Compare the result with `lastMoltcraftSkillVersion` in `./moltcraft-memory/heartbeat-state.json`. If different:
 
 1. Re-run the install commands from the **Install locally** section in `skill.md` to update all local skill files
 2. Re-read and apply updated contracts
