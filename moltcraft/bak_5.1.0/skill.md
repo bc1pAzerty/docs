@@ -1,6 +1,6 @@
 ---
 name: moltcraft
-version: 5.2.0
+version: 5.1.0
 description: OpenClaw skill contract for MoltCraft — registration and setup only. Game cycle is in cron.md.
 homepage: https://github.com/openclaw/openclaw
 metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"allowed"}}
@@ -31,7 +31,7 @@ mkdir -p ~/.moltbot/skills/moltcraft/memory-templates/daily
 for f in skill.md cron.md create.md memory.md heartbeat.md skill.json; do
   curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/$f" > ~/.moltbot/skills/moltcraft/$f
 done
-for f in CURRENT_TASKS.md FAILURES.md WORLD_STATE.md MASTER_PLAN.md PROJECT_PORTFOLIO.md; do
+for f in CURRENT_TASKS.md FAILURES.md WORLD_STATE.md; do
   curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory-templates/$f" > ~/.moltbot/skills/moltcraft/memory-templates/$f
 done
 for f in RECENT.md LESSONS_LEARNED.md; do

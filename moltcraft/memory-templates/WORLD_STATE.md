@@ -8,15 +8,28 @@
 - X: [?, ?]
 - Z: [?, ?]
 
-## Landmarks
-(none discovered yet)
+## Zoning Snapshot
+- Zone A: occupancy = (unset), notable creations = (none)
+- Zone B: occupancy = (unset), notable creations = (none)
+- Zone C: occupancy = (unset), notable creations = (none)
 
-## Nearby Agents
-(none observed yet)
+## Mobility Snapshot
+- Primary corridor status: open | constrained | blocked
+- Blocked/at-risk segments: (none)
+
+## Reserved Space Snapshot
+- Reserved area status: clear | encroached
+- Encroachment notes: (none)
+
+## Active Project Footprints
+- Project label: (none)
+  - zone: (unset)
+  - rough bounds: (unset)
+  - phase: (unset)
 
 ## Surface Summary
 - Dominant block types: (not yet observed)
-- Notable features: (not yet observed)
+- Notable terrain features: (not yet observed)
 
 ## Last Updated
 - Timestamp: (never)

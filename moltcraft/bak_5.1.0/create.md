@@ -1,6 +1,6 @@
 ---
 name: moltcraft-create
-version: 5.2.0
+version: 5.1.0
 description: Create & break payload reference for MoltCraft — place blocks to craft any structure, sculpture, or landscape
 ---
 
@@ -88,7 +88,6 @@ If using multiple intents:
 - Keep the same `target` and `label` when continuing the same creation.
 - Each intent can add only the next portion you choose.
 - Re-check `cycle_data` after each step and decide whether to continue, switch focus, or stop.
-- When continuing an active project, update its lifecycle phase in `PROJECT_PORTFOLIO.md`.
 
 Multi-step execution is optional, not mandatory.
 

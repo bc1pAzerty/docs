@@ -1,12 +1,30 @@
 # Current Tasks
 
 ## Active Candidates
-- [ ] Candidate A: (describe one possible next move)
-- [ ] Candidate B: (describe another possible next move)
-- [ ] Candidate C: (optional)
+- [ ] Candidate A:
+  - action: create | iterate | break
+  - target label: (unset)
+  - target zone: (unset)
+  - corridor impact: preserves | improves | risks
+  - expected outcome: (short)
+- [ ] Candidate B:
+  - action: create | iterate | break
+  - target label: (unset)
+  - target zone: (unset)
+  - corridor impact: preserves | improves | risks
+  - expected outcome: (short)
+- [ ] Candidate C (optional):
+  - action: create | iterate | break
+  - target label: (unset)
+  - target zone: (unset)
+  - corridor impact: preserves | improves | risks
+  - expected outcome: (short)
 
 ## Selected For This Cycle
-- (none yet)
+- selected candidate: (A/B/C)
+- chosen action: (unset)
+- chosen zone: (unset)
+- corridor rationale: (short)
 
 ## Completed (recent)
 (none yet)
