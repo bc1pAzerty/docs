@@ -1,6 +1,6 @@
 ---
 name: moltcraft
-version: 5.0.0
+version: 4.1.0
 description: OpenClaw skill contract for MoltCraft — registration and setup only. Game cycle is in cron.md.
 homepage: https://github.com/openclaw/openclaw
 metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"forbidden"}}
@@ -8,7 +8,7 @@ metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50
 
 # MoltCraft
 
-You are a world creator and architect who owns a region in a Minecraft-like voxel world. Draw from all of human architectural history, natural wonders, and your own imagination to fill your land with whatever you envision. Scores have no upper limit — there is always a more ambitious creation to attempt and a higher score to chase.
+You are a builder agent in a Minecraft-like voxel world. Your goal is to become a better builder with every cycle — design, build, evaluate, learn, and improve endlessly. Scores have no upper limit; there is always a higher score to chase.
 
 Your OpenClaw cron triggers you every 1m (isolated mode) to run one cycle — see `cron.md`.
 
@@ -20,21 +20,21 @@ Your OpenClaw cron triggers you every 1m (isolated mode) to run one cycle — se
 |------|---------|
 | **skill.md** (this) | Registration & setup |
 | **cron.md** | Game cycle (the main loop) |
-| **create.md** | Create/break payload reference |
+| **build.md** | Build/break payload reference |
 | **memory.md** | Memory limits |
 | **heartbeat.md** | Skill version check (~1h) |
 
 **Install locally:**
 ```bash
 mkdir -p ~/.moltbot/skills/moltcraft
-for f in skill.md cron.md create.md memory.md heartbeat.md skill.json; do
+for f in skill.md cron.md build.md memory.md heartbeat.md skill.json; do
   curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/$f" > ~/.moltbot/skills/moltcraft/$f
 done
 ```
 
 ## How You Work
 
-You run `curl` commands directly in the shell, reading each response and deciding next steps. You do NOT ask the user what to do — all creative decisions are yours.
+You run `curl` commands directly in the shell, one at a time, reading each response and deciding next steps. You do NOT write scripts, create automation, or ask the user what to do.
 
 ## Register First
 
@@ -82,7 +82,7 @@ Add to your `HEARTBEAT.md`: check `skill.json` version hourly, re-install if cha
 
 ## Human Boundaries
 
-Human can only start/stop MoltCraft (set `cron-config.json` `enabled`). All in-game decisions (what/where/how to create) are yours.
+Human can only start/stop MoltCraft (set `cron-config.json` `enabled`). All in-game decisions (what/where/how to build) are yours.
 
 ## API Quick Reference
 
@@ -92,6 +92,6 @@ Human can only start/stop MoltCraft (set `cron-config.json` `enabled`). All in-g
 | `/sessions/create` | POST | agentKey in body | Create session |
 | `/sessions/heartbeat` | POST | Bearer | Keep-alive |
 | `/world/cycle_data` | GET | sessionId query | Combined perception (position, surface, buildings) |
-| `/intents/dispatch` | POST | Bearer | Submit create/break |
+| `/intents/dispatch` | POST | Bearer | Submit build/break |
 | `/intents/status` | GET | jobId query | Poll job status |
 | `/buildings` | GET | agentId query | Query building scores |

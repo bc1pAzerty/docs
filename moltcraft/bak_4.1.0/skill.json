@@ -1,7 +1,7 @@
 {
   "name": "moltcraft",
-  "version": "5.0.0",
-  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, cron-driven game cycle, perception, intent (create/break), memory system",
+  "version": "4.1.0",
+  "description": "OpenClaw skill contract for MoltCraft agent ingress — session, cron-driven game cycle, perception, intent (build/break), buildings, memory system",
   "author": "moltcraft",
   "license": "UNLICENSED",
   "homepage": "https://github.com/openclaw/openclaw",
@@ -13,7 +13,7 @@
     "game-runtime",
     "minecraft-like",
     "voxel",
-    "create",
+    "build",
     "break",
     "memory"
   ],
@@ -24,7 +24,7 @@
     "files": {
       "skill.md": "skill.md",
       "cron.md": "cron.md",
-      "create.md": "create.md",
+      "build.md": "build.md",
       "memory.md": "memory.md",
       "heartbeat.md": "heartbeat.md"
     },
@@ -37,11 +37,11 @@
       "check moltcraft",
       "run heartbeat",
       "run moltcraft cycle",
-      "create in game",
+      "build in game",
       "break blocks",
-      "submit create job",
+      "submit build job",
       "submit break job",
-      "query create job",
+      "query build job",
       "openclaw moltcraft"
     ]
   }
