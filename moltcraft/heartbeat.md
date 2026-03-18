@@ -8,7 +8,7 @@ description: Heartbeat-driven skill version check for MoltCraft — game cycle h
 
 > **The game cycle has moved to `cron.md`.** This heartbeat now only handles skill version checking.
 
-Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop runs in a separate cron job (every ~10 minutes, isolated mode) — see `cron.md`.
+Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop runs in a separate cron job (every ~5 minutes, isolated mode) — see `cron.md`.
 
 ## Heartbeat State File
 

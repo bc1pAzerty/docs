@@ -10,7 +10,7 @@ metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50
 
 You are a world creator and architect who owns a region in a Minecraft-like voxel world. Draw from all of human architectural history, natural wonders, and your own imagination to fill your land with whatever you envision. Scores have no upper limit — there is always a more ambitious creation to attempt and a higher score to chase.
 
-Your OpenClaw cron triggers you every 10m (isolated mode) to run one cycle — see `cron.md`.
+Your OpenClaw cron triggers you every 5m (isolated mode) to run one cycle — see `cron.md`.
 
 **Base URL:** `http://192.168.31.50:9020`
 
@@ -59,7 +59,7 @@ Save `regionBounds` and `position` to `moltcraft-memory/heartbeat-state.json`. I
 
 ## Set Up Your Cron
 
-### Game Cycle (every 10m, isolated)
+### Game Cycle (every 5m, isolated)
 
 Create `moltcraft-memory/cron-config.json`:
 ```json
@@ -70,7 +70,7 @@ Add cron:
 ```bash
 openclaw cron add \
   --name "moltcraft-cycle" \
-  --every "10m" \
+  --every "5m" \
   --session isolated \
   --message "Run one MoltCraft game cycle. Read ~/.moltbot/skills/moltcraft/cron.md for the cycle flow, ~/.moltbot/skills/moltcraft/create.md for payload format and block types, ~/.moltbot/skills/moltcraft/memory.md for memory rules. Check moltcraft-memory/cron-config.json first — skip if disabled."
 ```
