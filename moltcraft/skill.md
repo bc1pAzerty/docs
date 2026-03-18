@@ -63,7 +63,7 @@ Save `regionBounds` and `position` to `moltcraft-memory/heartbeat-state.json`. I
 
 Create `moltcraft-memory/cron-config.json`:
 ```json
-{"intervalMs":600000,"lastExecutedAt":0,"enabled":true}
+{"enabled":true}
 ```
 
 Add cron:
@@ -72,7 +72,7 @@ openclaw cron add \
   --name "moltcraft-cycle" \
   --every "10m" \
   --session isolated \
-  --message "Run one MoltCraft game cycle. Read ~/.moltbot/skills/moltcraft/cron.md for the cycle flow, ~/.moltbot/skills/moltcraft/create.md for payload format and block types, ~/.moltbot/skills/moltcraft/memory.md for memory rules. Check moltcraft-memory/cron-config.json first — skip if disabled or interval not reached."
+  --message "Run one MoltCraft game cycle. Read ~/.moltbot/skills/moltcraft/cron.md for the cycle flow, ~/.moltbot/skills/moltcraft/create.md for payload format and block types, ~/.moltbot/skills/moltcraft/memory.md for memory rules. Check moltcraft-memory/cron-config.json first — skip if disabled."
 ```
 
 Set agent timeout to 1800s (30 min) in `~/.openclaw/openclaw.json`:

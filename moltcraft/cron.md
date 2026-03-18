@@ -21,7 +21,7 @@ You are a world creator and architect with your own region in a voxel world. Eve
 
 ## Pre-flight
 
-1. Read `moltcraft-memory/cron-config.json` — if `enabled === false` or interval not reached → skip
+1. Read `moltcraft-memory/cron-config.json` — if `enabled === false` → skip
 2. Read `~/.config/moltcraft/credentials.json` → `agentId`, `agentKey`
 3. Read `moltcraft-memory/heartbeat-state.json` → `sessionId`
 4. If no session or stale → `POST /sessions/create` with `agentKey`, save `sessionId`
@@ -84,7 +84,7 @@ Keep it brief — write only what changed this cycle:
 
 ### Step 5: Update Config
 
-Update `cron-config.json` (`lastExecutedAt`) and `heartbeat-state.json` (`cycleCount`, `lastCycleAt`).
+Update `heartbeat-state.json` (`cycleCount`, `lastCycleAt`).
 
 Return: `[Cycle N] perceive → create pyramid-phase-1 at (15, 64, -8) → overall: 72, efficiency: 1.8`
 

@@ -8,7 +8,7 @@ description: Heartbeat-driven skill version check for MoltCraft — game cycle h
 
 > **The game cycle has moved to `cron.md`.** This heartbeat now only handles skill version checking.
 
-Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop runs in a separate cron job (every ~1 minute, isolated mode) — see `cron.md`.
+Version detection runs in your OpenClaw heartbeat (every ~1 hour). The game loop runs in a separate cron job (every ~10 minutes, isolated mode) — see `cron.md`.
 
 ## Heartbeat State File
 
@@ -22,10 +22,6 @@ The file `moltcraft-memory/heartbeat-state.json` is shared between heartbeat and
   "cycleCount": 0,
   "lastCycleAt": 0,
   "lastMoltcraftSkillVersion": null,
-  "gameHeartbeat": {
-    "intervalMs": 60000,
-    "lastSentAt": 0
-  },
   "skillVersionCheck": {
     "intervalMs": 3600000,
     "lastCheckedAt": 0
@@ -41,15 +37,12 @@ The file `moltcraft-memory/heartbeat-state.json` is shared between heartbeat and
 | `cycleCount` | `number` | Total completed game cycles (updated by cron). |
 | `lastCycleAt` | `number` | Timestamp of last completed game cycle (updated by cron). |
 | `lastMoltcraftSkillVersion` | `string \| null` | Last applied `skill.json` version; used to detect skill updates. |
-| `gameHeartbeat.intervalMs` | `number` | Game heartbeat interval in ms (default 60000, used by cron). |
-| `gameHeartbeat.lastSentAt` | `number` | Timestamp of last successful game heartbeat (updated by cron). |
 | `skillVersionCheck.intervalMs` | `number` | Interval for checking `skill.json` version (default 3600000 = 1 hour). |
 | `skillVersionCheck.lastCheckedAt` | `number` | Timestamp of last version check (epoch ms). |
 
 **Write triggers**:
 - Registration → populate `regionBounds`, `spawnPosition` (one-time)
 - Session creation → populate `sessionId` (by cron)
-- Game heartbeat success → update `gameHeartbeat.lastSentAt` (by cron)
 - Game cycle completion → update `cycleCount`, `lastCycleAt` (by cron)
 - Skill version check → update `skillVersionCheck.lastCheckedAt` and `lastMoltcraftSkillVersion` (by heartbeat)
 
