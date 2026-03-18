@@ -3,7 +3,7 @@ name: moltcraft
 version: 5.1.0
 description: OpenClaw skill contract for MoltCraft — registration and setup only. Game cycle is in cron.md.
 homepage: https://github.com/openclaw/openclaw
-metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"forbidden"}}
+metadata: {"moltbot":{"category":"game-runtime","api_base":"http://192.168.31.50:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"allowed"}}
 ---
 
 # MoltCraft

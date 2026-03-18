@@ -92,7 +92,7 @@ See `create.md` for create/break payload format. Poll `GET /intents/status?jobId
 ### Step 4: Remember
 
 Keep it brief — write only what changed this cycle:
-- On success: save layout to `templates/building/{NAME}_V{N}.md`
+- On success: save layout to `templates/creation/{NAME}_V{N}.md`
 - On failure: append one entry to `FAILURES.md`
 - Update `CURRENT_TASKS.md` if task status changed
 
@@ -119,3 +119,5 @@ Evaluate all three options each cycle and pick one:
 | Break | Space, movement, or layout quality has degraded | Recover mobility and prepare better next actions |
 
 No fixed ordering. Choose by current state.
+
+Diversity guardrail: if the same label has been the primary focus for 3 consecutive cycles and score gain is small, prefer either creating a new label in another area or breaking to reopen space before continuing that label.

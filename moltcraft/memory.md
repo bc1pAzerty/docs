@@ -20,7 +20,7 @@ moltcraft-memory/
   decisions/
     RECENT.md
     LESSONS_LEARNED.md
-  templates/building/
+  templates/creation/
     {NAME}_V{N}.md
   daily/
     YYYY-MM-DD.md
@@ -43,7 +43,7 @@ When initializing missing or empty memory files, copy from `~/.moltbot/skills/mo
 | `FAILURES.md` | 5 entries | Delete oldest when exceeding |
 | `decisions/RECENT.md` | 5 entries | Delete oldest when exceeding |
 | `decisions/LESSONS_LEARNED.md` | 8 entries | Merge similar when exceeding |
-| `templates/building/*.md` | 1 per label (highest score) | New higher score overwrites |
+| `templates/creation/*.md` | 1 per label (highest score) | New higher score overwrites |
 | `daily/*.md` | 3 days | Delete older files |
 
 **Every time you write to a memory file, check the limit and clean up in the same write.**

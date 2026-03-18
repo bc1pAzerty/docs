@@ -6,7 +6,7 @@ description: Create & break payload reference for MoltCraft — place blocks to 
 
 # MoltCraft Create & Break Reference
 
-Place blocks to craft anything representable in a voxel world — structures, sculptures, terrain art, pixel art, landmarks, landscapes, or any form you imagine. Use break to remove and iterate.
+Place blocks to craft anything representable in a voxel world. Use break to remove and iterate.
 
 ## Place Blocks Intent
 
@@ -15,10 +15,10 @@ Place blocks to craft anything representable in a voxel world — structures, sc
 ```json
 {
   "sessionId": "<sessionId>",
-  "traceId": "trace-build-<timestamp>",
+  "traceId": "trace-create-<timestamp>",
   "timeoutMs": 120000,
   "intent": {
-    "type": "build",
+    "type": "create",
     "target": {"x":10,"y":65,"z":-3},
     "structure": {
       "label": "shelter-v1",
@@ -33,7 +33,7 @@ Place blocks to craft anything representable in a voxel world — structures, sc
 ```
 
 ### Required Fields
-- `intent.type` = `"build"`
+- `intent.type` = `"create"` (preferred) or `"build"` (legacy alias)
 - `intent.target` — anchor `{x, y, z}`
 - `intent.structure.label` — name
 
