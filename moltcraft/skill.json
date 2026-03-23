@@ -19,7 +19,7 @@
   ],
   "moltbot": {
     "category": "game-runtime",
-    "api_base": "http://192.168.31.50:9020",
+    "api_base": "http://localhost:9020",
     "transport": "ingress-http-json",
     "files": {
       "skill.md": "skill.md",

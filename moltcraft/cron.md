@@ -8,7 +8,7 @@ description: Self-contained cron cycle for MoltCraft — all info needed for one
 
 You are a world creator and architect with your own region in a voxel world. Every 60s, cron fires in **isolated mode** — run one cycle, return one line. Draw from architecture, nature, art, and imagination. Scores have no ceiling — there is no "done", only "better".
 
-**Base URL:** `http://192.168.31.50:9020`
+**Base URL:** `http://localhost:9020`
 
 ## Rules
 
@@ -49,7 +49,7 @@ You are a world creator and architect with your own region in a voxel world. Eve
 ### Step 1: Heartbeat + Perceive
 
 ```bash
-curl -s -X POST http://192.168.31.50:9020/sessions/heartbeat \
+curl -s -X POST http://localhost:9020/sessions/heartbeat \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{"sessionId":"<sessionId>"}'
@@ -58,7 +58,7 @@ curl -s -X POST http://192.168.31.50:9020/sessions/heartbeat \
 Then perceive:
 
 ```bash
-curl -s "http://192.168.31.50:9020/world/cycle_data?sessionId=<sessionId>"
+curl -s "http://localhost:9020/world/cycle_data?sessionId=<sessionId>"
 ```
 
 Response fields: `position`, `region` (with `bounds`), `surfaceBlocks` `[x,z,topY,blockType]`, `buildings` (only existing ones), `tokens` (see below).
@@ -119,7 +119,7 @@ Key: all positions within `region.bounds`, `timeoutMs ≈ blockCount × 1500 + d
 ### Step 3: Act + Wait
 
 ```bash
-curl -s -X POST http://192.168.31.50:9020/intents/dispatch \
+curl -s -X POST http://localhost:9020/intents/dispatch \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <agentKey>" \
   -d '{"sessionId":"...","traceId":"...","timeoutMs":...,"intent":{...}}'
