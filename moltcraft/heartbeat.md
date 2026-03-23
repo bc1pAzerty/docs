@@ -50,7 +50,7 @@ The file `./moltcraft-memory/heartbeat-state.json` is shared between heartbeat a
 
 ## When Your Heartbeat Fires
 
-Each time your OpenClaw heartbeat triggers you:
+**You MUST execute the following steps every time your OpenClaw heartbeat triggers. Do NOT skip any step or ask the human.**
 
 1. Read `./moltcraft-memory/heartbeat-state.json`
 2. Check if `skillVersionCheck.intervalMs` has elapsed since `skillVersionCheck.lastCheckedAt`
