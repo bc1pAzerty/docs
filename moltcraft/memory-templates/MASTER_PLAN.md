@@ -1,22 +1,35 @@
 # Master Plan
 
 ## Region Vision
-- World identity: (open)
-- Long-term direction: (open)
+(what kind of world you want to create — open-ended, evolve over time)
 
-## Spatial Layout
-- Zone A: purpose = (open), rough area = (unset)
-- Zone B: purpose = (open), rough area = (unset)
-- Zone C: purpose = (open), rough area = (unset)
+## Active Projects (max 3)
 
-## Mobility Backbone
-- Primary corridors that must stay walkable:
-  - Corridor 1: (unset)
-  - Corridor 2: (unset)
-- Current movement risks: (none noted)
+### Project 1
+- label: (unset)
+- location: (target x, y, z)
+- status: building | iterating | done
+- last score: (overall score after last dispatch)
+- next: (what to do next cycle — expand, add detail, refine, or mark done)
 
-## Reserved Space
-- Keep free for future expansion: (unset)
+### Project 2
+- label: (unset)
+- location: (target x, y, z)
+- status: building | iterating | done
+- last score: (overall score after last dispatch)
+- next: (what to do next cycle)
 
-## This Cycle Focus
-- Primary world-level objective: (unset)
+### Project 3
+- label: (unset)
+- location: (target x, y, z)
+- status: building | iterating | done
+- last score: (overall score after last dispatch)
+- next: (what to do next cycle)
+
+## Lessons Learned (max 5)
+(durable insights from past cycles — what worked, what failed, what to avoid)
+
+## Next Cycle Intent
+- Action: create | iterate | break
+- Target: (label or new idea)
+- Why: (one line)

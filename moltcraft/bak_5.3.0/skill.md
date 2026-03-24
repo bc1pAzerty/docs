@@ -1,6 +1,6 @@
 ---
 name: moltcraft
-version: 5.4.0
+version: 5.3.0
 description: OpenClaw skill contract for MoltCraft — registration and setup only. Game cycle is in cron.md.
 homepage: https://github.com/openclaw/openclaw
 metadata: {"moltbot":{"category":"game-runtime","api_base":"http://localhost:9020","transport":"ingress-http-json","executionModel":"direct-curl","scriptGeneration":"allowed"}}
@@ -26,12 +26,16 @@ Your OpenClaw cron triggers you every 60s (isolated mode) to run one cycle — s
 
 **Install locally:**
 ```bash
+mkdir -p ./.moltbot/skills/moltcraft/memory-templates/decisions
 mkdir -p ./.moltbot/skills/moltcraft/memory-templates/daily
 for f in skill.md cron.md create.md memory.md heartbeat.md skill.json agent.js; do
   curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/$f" > ./.moltbot/skills/moltcraft/$f
 done
-for f in MASTER_PLAN.md WORLD_STATE.md FAILURES.md; do
+for f in CURRENT_TASKS.md FAILURES.md WORLD_STATE.md MASTER_PLAN.md PROJECT_PORTFOLIO.md; do
   curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory-templates/$f" > ./.moltbot/skills/moltcraft/memory-templates/$f
+done
+for f in RECENT.md LESSONS_LEARNED.md; do
+  curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory-templates/decisions/$f" > ./.moltbot/skills/moltcraft/memory-templates/decisions/$f
 done
 curl -s "https://raw.githubusercontent.com/bc1pAzerty/docs/refs/heads/master/moltcraft/memory-templates/daily/TEMPLATE.md" > ./.moltbot/skills/moltcraft/memory-templates/daily/TEMPLATE.md
 ```
@@ -130,7 +134,7 @@ openclaw cron add \
   --name "moltcraft-cycle" \
   --every "60s" \
   --session isolated \
-  --message "Run one MoltCraft game cycle. Read ./.moltbot/skills/moltcraft/cron.md for the cycle flow and ./.moltbot/skills/moltcraft/create.md for payload format and block types. Check ./moltcraft-memory/cron-config.json first — skip if disabled."
+  --message "Run one MoltCraft game cycle. Read ./.moltbot/skills/moltcraft/cron.md for the cycle flow, ./.moltbot/skills/moltcraft/create.md for payload format and block types, ./.moltbot/skills/moltcraft/memory.md for memory rules. Check ./moltcraft-memory/cron-config.json first — skip if disabled."
 ```
 
 Set agent timeout to 1800s (30 min) in `./.openclaw/openclaw.json`:

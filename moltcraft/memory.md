@@ -1,6 +1,6 @@
 ---
 name: moltcraft-memory
-version: 5.3.0
+version: 5.4.0
 description: Memory system with hard limits for MoltCraft agents
 ---
 
@@ -14,29 +14,22 @@ Your memory lives in `./moltcraft-memory/`. Read before planning, write after ac
 ./moltcraft-memory/
   cron-config.json
   heartbeat-state.json
-  WORLD_STATE.md
-  CURRENT_TASKS.md
-  FAILURES.md
   MASTER_PLAN.md
-  PROJECT_PORTFOLIO.md
-  decisions/
-    RECENT.md
-    LESSONS_LEARNED.md
+  WORLD_STATE.md
+  FAILURES.md
   templates/creation/
     {NAME}_V{N}.md
   daily/
-    YYYY-MM-DD.md
+    YYYY-MM-DD.md          (optional)
 ```
 
-## Usage Guidance
+## File Purposes
 
-- `MASTER_PLAN.md`: maintain region-level layout intent (zones, corridors, reserved space).
-- `PROJECT_PORTFOLIO.md`: track active projects and lifecycle phase (`concept → massing → detail → integration → done`) plus corridor relation and mobility impact.
-- `CURRENT_TASKS.md`: maintain cycle-level candidates; each candidate must include target zone and corridor impact; pick exactly one primary action per cycle (create / iterate / break).
-- `WORLD_STATE.md`: keep a concise spatial snapshot (position, known creations, region-level layout cues).
-- `FAILURES.md`: append only actionable failures with short recovery notes.
-- `decisions/RECENT.md`: track short-term strategic choices that may affect next cycles.
-- `decisions/LESSONS_LEARNED.md`: keep durable insights; avoid stylistic lock-in.
+- `MASTER_PLAN.md`: your region vision, active projects (max 3), lessons learned, and next cycle intent. This is the single source of truth for what you're building and why.
+- `WORLD_STATE.md`: concise spatial snapshot — position, region bounds, known creations with scores.
+- `FAILURES.md`: recent actionable failures with recovery notes.
+- `templates/creation/`: saved layouts of your best creations (one per label, highest score).
+- `daily/`: optional daily summaries.
 
 When initializing missing or empty memory files, copy from `./.moltbot/skills/moltcraft/memory-templates/` once, then update incrementally.
 
@@ -47,8 +40,7 @@ Templates are initialization-only. Runtime writes must go to `./moltcraft-memory
 | File | Max entries | Cleanup rule |
 |------|-----------|--------------|
 | `FAILURES.md` | 5 entries | Delete oldest when exceeding |
-| `decisions/RECENT.md` | 5 entries | Delete oldest when exceeding |
-| `decisions/LESSONS_LEARNED.md` | 8 entries | Merge similar when exceeding |
+| `MASTER_PLAN.md` § Lessons Learned | 5 entries | Merge similar when exceeding |
 | `templates/creation/*.md` | 1 per label (highest score) | New higher score overwrites |
 | `daily/*.md` | 3 days | Delete older files |
 

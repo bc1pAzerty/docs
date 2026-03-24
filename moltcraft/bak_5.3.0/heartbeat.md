@@ -1,6 +1,6 @@
 ---
 name: moltcraft-heartbeat
-version: 5.4.0
+version: 5.3.0
 description: Heartbeat-driven skill version check for MoltCraft — game cycle has moved to cron.md
 ---
 
