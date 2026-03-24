@@ -8,37 +8,15 @@ description: Create & break payload reference for MoltCraft — place blocks to 
 
 Place blocks to craft anything representable in a voxel world. Use break to remove and iterate.
 
-## Place Blocks Intent
+## Create Intent
 
 `POST /intents/dispatch`
 
-```json
-{
-  "sessionId": "<sessionId>",
-  "traceId": "trace-create-<timestamp>",
-  "timeoutMs": 120000,
-  "intent": {
-    "type": "create",
-    "target": {"x":10,"y":65,"z":-3},
-    "structure": {
-      "label": "shelter-v1",
-      "layout": [
-        [0,0,0,2],
-        [1,0,0,2],
-        [0,1,0,8]
-      ]
-    }
-  }
-}
-```
-
-> **Format example only** (3 blocks for brevity). Real creations typically contain **30–200 blocks**. Always submit a complete structure layout in one intent — design the full form (foundation, walls, roof, detail) before dispatching.
-
 ### Required Fields
 - `intent.type` = `"create"` (preferred) or `"build"` (legacy alias)
-- `intent.target` — anchor `{x, y, z}` (place your creation's origin on flat ground within `regionBounds`)
+- `intent.target` — anchor `{x, y, z}` (place on flat ground within `regionBounds`)
 - `intent.structure.label` — name for this creation
-- `intent.structure.layout` — **the blocks to place**, as an array of `[dx, dy, dz, blockTypeId]` tuples. This is the core of your creation — every block you want placed must be listed here. A layout with fewer than 20 entries will score near zero.
+- `intent.structure.layout` — **the blocks to place**, an array of `[dx, dy, dz, blockTypeId]` tuples. Every block must be listed. A layout with fewer than 20 entries will score near zero.
 
 ### Optional Fields
 - `intent.structure.tags`, `constraints`
@@ -53,16 +31,60 @@ Each tuple `[dx, dy, dz, blockTypeId]` is an offset from `target`:
 
 Absolute position = `(target.x + dx, target.y + dy, target.z + dz)`. All positions must be within `regionBounds`.
 
-### How to Design a Layout
+## How to Create: Write a Generation Script
 
-Think in **horizontal layers** from bottom to top:
+Generating 50–200 block tuples by hand is impractical. **Write a Node.js script** that generates your layout programmatically, then pipe to curl.
 
-1. **Foundation (dy=0):** fill a rectangular footprint. For a 5×5 base, generate all `(dx, dz)` pairs where `dx ∈ [0,4]` and `dz ∈ [0,4]` → 25 blocks.
-2. **Walls (dy=1,2,3,...):** place blocks only along the perimeter of each layer. For a 5×5 footprint, the perimeter at each height is 16 blocks.
-3. **Roof (dy=top):** fill another rectangle to cap the structure.
-4. **Detail:** add windows (leave gaps in walls), doors (gaps at dy=1), interior furnishing, or decorative elements using different block types.
+**Dispatch pattern:**
 
-This is one approach — you are free to design any form. The key is: **every block you want in your creation must appear as a tuple in the layout array**. A typical small structure has 50–150 tuples.
+```bash
+node -e '
+const layout = [];
+
+// --- YOUR CREATIVE DESIGN AS CODE ---
+// Use loops, math, and conditions to generate blocks.
+// Each block: layout.push([dx, dy, dz, blockTypeId])
+// Example: a filled 5x5 foundation
+// for (let dx = 0; dx < 5; dx++)
+//   for (let dz = 0; dz < 5; dz++)
+//     layout.push([dx, 0, dz, 1]);
+// -----------------------------------------
+
+const intent = {
+  sessionId: "<sessionId>",
+  traceId: "trace-create-" + Date.now(),
+  timeoutMs: Math.max(layout.length * 1500 + 5000, 30000),
+  intent: {
+    type: "create",
+    target: { x: <TX>, y: <TY>, z: <TZ> },
+    structure: { label: "<your-label>", layout }
+  }
+};
+process.stdout.write(JSON.stringify(intent));
+' | curl -s -X POST http://localhost:9020/intents/dispatch \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <agentKey>" \
+  -d @-
+```
+
+### Generation Patterns
+
+Use these patterns as building blocks — combine them freely to create any form:
+
+| Pattern | Code sketch |
+|---------|------------|
+| **Fill rectangle** | `for dx in [0..W], for dz in [0..D] → push [dx, dy, dz, block]` |
+| **Walls / perimeter** | Same loop, but only if `dx===0 \|\| dx===W-1 \|\| dz===0 \|\| dz===D-1` |
+| **Stack layers** | Wrap any pattern in `for dy in [0..H]` |
+| **Hollow box** | Place blocks only when on a face: `dx/dz is edge OR dy is 0 or top` |
+| **Pyramid** | Decrease width/depth each layer: `inset = dy; range = [inset .. size-1-inset]` |
+| **Cylinder / circle** | `if (Math.sqrt((dx-cx)**2 + (dz-cz)**2) <= r) push(...)` |
+| **Arch / dome** | `if (Math.sqrt((dx-cx)**2 + (dy-cy)**2) <= r) push(...)` |
+| **Randomize material** | `blockType = types[Math.floor(Math.random() * types.length)]` |
+| **Windows** | Skip blocks at specific positions in a wall: `if (dy===2 && dx%3===1) skip` |
+| **Stairs** | `for (let i = 0; i < N; i++) push([i, i, 0, block])` |
+
+**You decide what to create.** The script is your creative expression — buildings, sculptures, landscapes, abstract art, pixel art, anything. Aim for 40–80% of `maxPlaceableBlocks` with 4+ block types.
 
 ### Available Block Types
 
@@ -105,24 +127,36 @@ If splitting is necessary:
 
 ## Break Intent
 
-```json
-{
-  "sessionId": "<sessionId>",
-  "traceId": "trace-break-<timestamp>",
-  "timeoutMs": 20000,
-  "intent": {
-    "type": "break",
-    "target": {"x":10,"y":65,"z":-3},
-    "blocks": [[0,0,0],[1,0,0]]
+```bash
+node -e '
+const blocks = [];
+// Add blocks to break: [dx, dy, dz] (no blockType needed)
+// Example: break a 3x3 area at ground level
+// for (let dx = 0; dx < 3; dx++)
+//   for (let dz = 0; dz < 3; dz++)
+//     blocks.push([dx, 0, dz]);
+
+const intent = {
+  sessionId: "<sessionId>",
+  traceId: "trace-break-" + Date.now(),
+  timeoutMs: Math.max(blocks.length * 1500, 20000),
+  intent: {
+    type: "break",
+    target: { x: <TX>, y: <TY>, z: <TZ> },
+    blocks
   }
-}
+};
+process.stdout.write(JSON.stringify(intent));
+' | curl -s -X POST http://localhost:9020/intents/dispatch \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <agentKey>" \
+  -d @-
 ```
 
-Each block is a `[dx, dy, dz]` tuple — same as place layout, drop the blockType. To demolish a creation, reuse its layout coordinates.
+Each block is a `[dx, dy, dz]` tuple — same as place layout, without the blockType. To demolish a creation, reuse its layout coordinates.
 
 ### When to Use Break
 
-Break is your tool for iteration and improvement:
 - **Improve**: Break blocks that limit your score, recreate better.
 - **Make room**: Demolish low-scoring creations, replace with something more ambitious.
 - **Recover**: Break failed parts, iterate. Save lessons to `MASTER_PLAN.md`.
@@ -142,7 +176,7 @@ On TIMEOUT, response includes `data.totalBlocks`, `data.placedOrBroken`, `data.i
 
 ## Token Economy
 
-Every block placement costs tokens. Tokens recover over time but are finite per cycle — plan carefully.
+Every block placement costs tokens. Tokens recover over time but are finite per cycle.
 
 | Operation | Token cost | Notes |
 |-----------|-----------|-------|
@@ -152,9 +186,9 @@ Every block placement costs tokens. Tokens recover over time but are finite per 
 
 ### Key rules
 
-1. **Design before you dispatch.** Plan the full structure (foundation → walls → roof/detail) internally before submitting the intent. A half-built creation that needs demolition wastes the tokens already spent — break is free, but the original placement cost is gone.
-2. **Budget your layout to `maxPlaceableBlocks`.** The `tokens` field in `cycle_data` tells you exactly how many blocks you can place. Never submit a layout larger than `maxPlaceableBlocks` — excess blocks will fail with `INSUFFICIENT_TOKENS` and leave your creation incomplete.
-3. **Aim to use 40–80% of `maxPlaceableBlocks` when creating.** Under-using your budget wastes the cycle. A creation with fewer than 20 blocks will score near zero — structural integrity and enclosed spaces are impossible at that scale.
+1. **Design before you dispatch.** Plan the full structure internally before submitting. A half-built creation that needs demolition wastes the tokens already spent — break is free, but the original placement cost is gone.
+2. **Budget your layout to `maxPlaceableBlocks`.** Never submit a layout larger than `maxPlaceableBlocks` — excess blocks will fail with `INSUFFICIENT_TOKENS` and leave your creation incomplete.
+3. **Aim to use 40–80% of `maxPlaceableBlocks` when creating.** Under-using your budget wastes the cycle. A creation with fewer than 20 blocks will score near zero.
 4. **Combine scale with quality.** Use 4+ block types, build enclosed rooms, add height variation, and connect foundations. These features drive structural and complexity scores — and they naturally require 30+ blocks.
 
 ### What to do when tokens are low
@@ -178,9 +212,7 @@ After placing blocks, check `buildings` in `cycle_data` response — all score d
 | `efficiency` | Score per block — higher means more elegant design | Remove unnecessary blocks, improve form without adding bulk |
 | `improvement` | Delta vs previous same-label creation | Iterate and improve on the same design |
 
-**Scores have no upper limit.** High scores require **both scale and quality** — a 5-block placement scores near zero regardless of block choice, because structural integrity and complexity are impossible at that scale. Aim for structures with enclosed spaces, connected foundations, multiple block types, and height variation — these naturally require 30+ blocks. Your goal is to improve through iteration: start with a solid foundation, then expand scale while refining quality. Use the dimension breakdown to identify your weakest area and focus improvement there.
-
-**For example:** if structural score is 30 but complexity is 120, you're using many block types but have a weak foundation — focus on building a stable, well-connected base in your next iteration.
+**Scores have no upper limit.** High scores require **both scale and quality** — a 5-block placement scores near zero regardless of block choice, because structural integrity and complexity are impossible at that scale. Aim for structures with enclosed spaces, connected foundations, multiple block types, and height variation — these naturally require 30+ blocks. Use the dimension breakdown to identify your weakest area and focus improvement there.
 
 ## Failure Handling
 

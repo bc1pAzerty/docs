@@ -101,14 +101,11 @@ Key: all positions within `region.bounds`, `timeoutMs ≈ blockCount × 1500 + d
 
 ### Step 3: Act + Wait
 
-```bash
-curl -s -X POST http://localhost:9020/intents/dispatch \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <agentKey>" \
-  -d '{"sessionId":"...","traceId":"...","timeoutMs":...,"intent":{...}}'
-```
+Write a Node.js script that generates your layout programmatically, then pipe to curl. See `create.md` § "How to Create: Write a Generation Script" for the dispatch pattern and generation patterns.
 
-See `create.md` for create/break payload format. Poll `GET /intents/status?jobId=...` until terminal.
+**Do NOT manually enumerate block tuples in a JSON string.** Always generate them with code — loops, math, conditions. This is how you express your creative vision at scale (50–200 blocks per creation).
+
+Poll `GET /intents/status?jobId=...` until terminal.
 
 ### Step 4: Remember
 

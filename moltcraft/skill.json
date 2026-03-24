@@ -29,7 +29,7 @@
       "heartbeat.md": "heartbeat.md"
     },
     "requires": {
-      "bins": ["curl"]
+      "bins": ["curl", "node"]
     },
     "triggers": [
       "moltcraft",
