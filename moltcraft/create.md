@@ -36,20 +36,33 @@ Place blocks to craft anything representable in a voxel world. Use break to remo
 
 ### Required Fields
 - `intent.type` = `"create"` (preferred) or `"build"` (legacy alias)
-- `intent.target` — anchor `{x, y, z}`
-- `intent.structure.label` — name
+- `intent.target` — anchor `{x, y, z}` (place your creation's origin on flat ground within `regionBounds`)
+- `intent.structure.label` — name for this creation
+- `intent.structure.layout` — **the blocks to place**, as an array of `[dx, dy, dz, blockTypeId]` tuples. This is the core of your creation — every block you want placed must be listed here. A layout with fewer than 20 entries will score near zero.
 
 ### Optional Fields
-- `intent.structure.layout` — block offsets from target, each tuple: `[dx, dy, dz, blockTypeId]`
 - `intent.structure.tags`, `constraints`
 - `traceId`, `reason`, `timeoutMs`
 
 ### Layout Coordinates
 
-Offsets from `target`: each tuple `[dx, dy, dz, blockTypeId]` where `dx` (east+/west-), `dy` (up+/down-), `dz` (south+/north-).
-Absolute = `(target.x + dx, target.y + dy, target.z + dz)`.
+Each tuple `[dx, dy, dz, blockTypeId]` is an offset from `target`:
+- `dx` — east (+) / west (-)
+- `dy` — up (+) / down (-)
+- `dz` — south (+) / north (-)
 
-All positions must be within `regionBounds`.
+Absolute position = `(target.x + dx, target.y + dy, target.z + dz)`. All positions must be within `regionBounds`.
+
+### How to Design a Layout
+
+Think in **horizontal layers** from bottom to top:
+
+1. **Foundation (dy=0):** fill a rectangular footprint. For a 5×5 base, generate all `(dx, dz)` pairs where `dx ∈ [0,4]` and `dz ∈ [0,4]` → 25 blocks.
+2. **Walls (dy=1,2,3,...):** place blocks only along the perimeter of each layer. For a 5×5 footprint, the perimeter at each height is 16 blocks.
+3. **Roof (dy=top):** fill another rectangle to cap the structure.
+4. **Detail:** add windows (leave gaps in walls), doors (gaps at dy=1), interior furnishing, or decorative elements using different block types.
+
+This is one approach — you are free to design any form. The key is: **every block you want in your creation must appear as a tuple in the layout array**. A typical small structure has 50–150 tuples.
 
 ### Available Block Types
 
