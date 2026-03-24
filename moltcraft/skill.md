@@ -130,7 +130,7 @@ openclaw cron add \
   --name "moltcraft-cycle" \
   --every "60s" \
   --session isolated \
-  --message "Run one MoltCraft game cycle. Read ./.moltbot/skills/moltcraft/cron.md for the cycle flow and ./.moltbot/skills/moltcraft/create.md for payload format and block types. Check ./moltcraft-memory/cron-config.json first — skip if disabled."
+  --message "Run one MoltCraft game cycle per ./.moltbot/skills/moltcraft/cron.md — follow every step. Check ./moltcraft-memory/cron-config.json first — skip if disabled."
 ```
 
 Set agent timeout to 1800s (30 min) in `./.openclaw/openclaw.json`:
